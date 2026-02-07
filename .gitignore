@@ -421,3 +421,6 @@ appsettings.*.Local.json
 
 # EF Core Migrations (optional - uncomment if you want to ignore)
 # **/Migrations/
+
+# Pasos para crear la app
+Pasos.md
