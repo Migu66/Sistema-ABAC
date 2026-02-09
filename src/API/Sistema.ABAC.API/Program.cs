@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Serilog;
 using Serilog.Events;
+using Sistema.ABAC.API.Middleware;
 using Sistema.ABAC.Infrastructure.Persistence;
 using Sistema.ABAC.Infrastructure.Settings;
 using System.Text;
@@ -191,16 +192,18 @@ try
     Log.Information("Servicios configurados correctamente");
 
     // ============================================================
-    // CONFIGURACIÓN DEL PIPELINE DE MIDDLEWARE
-    // ============================================================
-
-    // ============================================================
-    // CONFIGURACIÓN DEL PIPELINE DE MIDDLEWARE
+    // CONFIGURACIÓN DEL PIPELINE DE MIDDLEWARE (Paso 6)
     // ============================================================
 
     var app = builder.Build();
 
-    // Configurar Serilog para requests HTTP
+    // 1. Manejo de excepciones global (DEBE IR PRIMERO)
+    app.UseExceptionHandling();
+
+    // 2. Headers de seguridad
+    app.UseSecurityHeaders();
+
+    // 3. Logging de requests HTTP con Serilog
     app.UseSerilogRequestLogging(options =>
     {
         options.MessageTemplate = "HTTP {RequestMethod} {RequestPath} respondió {StatusCode} en {Elapsed:0.0000} ms";
@@ -218,20 +221,25 @@ try
         };
     });
 
-    // Configure the HTTP request pipeline.
+    // 4. Habilitar Swagger en desarrollo
     if (app.Environment.IsDevelopment())
     {
         app.MapOpenApi();
     }
 
+    // 5. Redirección HTTPS
     app.UseHttpsRedirection();
 
-    // Habilitar CORS
+    // 6. Habilitar CORS (DEBE IR ANTES de Authentication/Authorization)
     app.UseCors();
 
-    // Habilitar Autenticación y Autorización (IMPORTANTE: el orden importa)
+    // 7. Autenticación (DEBE IR ANTES de Authorization)
     app.UseAuthentication();
+    
+    // 8. Autorización
     app.UseAuthorization();
+
+    // 9.p.UseAuthorization();
 
     // Mapear controladores
     app.MapControllers();
