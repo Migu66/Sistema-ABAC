@@ -6,12 +6,14 @@ on:
       - 'feature/**'
       - 'bugfix/**'
       - 'hotfix/**'
+      - 'miguel-gonzalez-pascual'
       - 'miguel-gonzalez-pascual/**'
   pull_request:
     branches:
       - 'feature/**'
       - 'bugfix/**'
       - 'hotfix/**'
+      - 'miguel-gonzalez-pascual'
       - 'miguel-gonzalez-pascual/**'
 
 env:
