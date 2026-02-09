@@ -35,8 +35,20 @@ jobs:
       run: dotnet restore
 
     - name: Build
+      id: build
       run: dotnet build --no-restore --configuration Release
 
     - name: Test
+      id: test
       run: dotnet test --no-build --configuration Release --verbosity normal
-      continue-on-error: true
+
+    - name: Rollback en caso de error
+      if: failure() && github.event_name == 'push' && github.ref == 'refs/heads/main'
+      run: |
+        echo "Error detectado en producción. Iniciando rollback..."
+        git config user.name "GitHub Actions"
+        git config user.email "actions@github.com"
+        git revert HEAD --no-edit
+        git push origin main
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
