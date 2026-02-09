@@ -8,22 +8,22 @@ Necesito diseñar y desarrollar el núcleo de un sistema de **Control de Acceso 
 El proyecto debe seguir estrictamente los principios de **Clean Architecture** y **Domain-Driven Design (DDD)**:
 - **Core (Domain):** Entidades puras, lógica de negocio y definiciones de abstracciones.
 - **Application:** Casos de uso, DTOs, Mappers y el "Policy Evaluation Engine".
-- **Infrastructure:** Persistencia con PostgreSQL, Implementación de Identity, Interceptores de EF Core y Servicios de Terceros.
+- **Infrastructure:** Persistencia con SQL Server, Implementación de Identity, Interceptores de EF Core y Servicios de Terceros.
 - **API:** Controladores RESTful, Middleware de manejo de excepciones globales y Documentación con Swagger.
 
 ## 2. STACK TÉCNICO ESPECÍFICO
 - **Runtime:** .NET 8/9.
-- **ORM:** Entity Framework Core (PostgreSQL Provider).
+- **ORM:** Entity Framework Core (SQL Server Provider).
 - **Seguridad:** ASP.NET Core Identity + JWT con Custom Claims.
 - **Evaluación Dinámica:** Utiliza **Dynamic LINQ** o **NCalc** para procesar las reglas guardadas como texto.
 - **Observabilidad:** Serilog para logging estructurado y auditoría.
 
 ## 3. COMPONENTES CLAVE A DESARROLLAR (DETALLE TÉCNICO)
 
-### A. Modelo de Datos (PostgreSQL)
+### A. Modelo de Datos (SQL Server)
 Define una estructura que soporte:
 - `Policy`: Id, Nombre, `RuleExpression` (string que guarda la lógica, ej: `User.Level >= Resource.RequiredLevel`), Prioridad y Efecto (Permit/Deny).
-- `UserAttributes` & `ResourceAttributes`: Tablas o JSONB en Postgres para flexibilidad total de atributos.
+- `UserAttributes` & `ResourceAttributes`: Tablas o JSON en SQL Server para flexibilidad total de atributos.
 
 ### B. Motor de Evaluación (Policy Engine)
 Implementa un servicio `IPolicyEvaluator` que:
