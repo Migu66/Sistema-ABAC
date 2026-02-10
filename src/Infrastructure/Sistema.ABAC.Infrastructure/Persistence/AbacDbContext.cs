@@ -85,9 +85,11 @@ public class AbacDbContext : IdentityDbContext<User, IdentityRole<Guid>, Guid>
     {
         base.OnModelCreating(modelBuilder);
 
-        // Configuraciones de entidades se agregarán en Fase 3
-        // modelBuilder.ApplyConfigurationsFromAssembly(typeof(AbacDbContext).Assembly);
+        // Aplicar todas las configuraciones de entidades del ensamblado actual
+        // Esto busca automáticamente todas las clases que implementan IEntityTypeConfiguration<T>
+        // y aplica sus configuraciones (AttributeConfiguration, PolicyConfiguration, etc.)
+        modelBuilder.ApplyConfigurationsFromAssembly(typeof(AbacDbContext).Assembly);
 
-        // Global Query Filters para Soft Delete se configurarán más adelante
+        // Global Query Filters para Soft Delete se configurarán en pasos posteriores (Paso 25)
     }
 }
