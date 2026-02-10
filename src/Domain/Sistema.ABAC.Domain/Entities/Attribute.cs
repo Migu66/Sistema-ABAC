@@ -63,8 +63,5 @@ public class Attribute : BaseEntity
     /// <summary>
     /// Colección de valores asignados a recursos para este atributo.
     /// </summary>
-    /// <remarks>
-    /// TEMPORALMENTE COMENTADO: Se descomentará cuando se cree la entidad ResourceAttribute en el paso 14.
-    /// </remarks>
-    // public virtual ICollection<ResourceAttribute> ResourceAttributes { get; set; } = new List<ResourceAttribute>();
+    public virtual ICollection<ResourceAttribute> ResourceAttributes { get; set; } = new List<ResourceAttribute>();
 }

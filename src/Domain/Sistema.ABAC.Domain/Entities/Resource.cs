@@ -55,10 +55,7 @@ public class Resource : BaseEntity
     /// Los atributos del recurso se evalúan en las políticas ABAC
     /// (ej: clasificación, propietario, departamento_responsable, nivel_confidencialidad).
     /// </summary>
-    /// <remarks>
-    /// TEMPORALMENTE COMENTADO: Se descomentará cuando se cree la entidad ResourceAttribute en el paso 14.
-    /// </remarks>
-    // public virtual ICollection<ResourceAttribute> ResourceAttributes { get; set; } = new List<ResourceAttribute>();
+    public virtual ICollection<ResourceAttribute> ResourceAttributes { get; set; } = new List<ResourceAttribute>();
 
     /// <summary>
     /// Colección de registros de auditoría de intentos de acceso a este recurso.
