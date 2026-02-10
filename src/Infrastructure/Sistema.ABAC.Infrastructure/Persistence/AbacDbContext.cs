@@ -90,6 +90,37 @@ public class AbacDbContext : IdentityDbContext<User, IdentityRole<Guid>, Guid>
         // y aplica sus configuraciones (AttributeConfiguration, PolicyConfiguration, etc.)
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(AbacDbContext).Assembly);
 
-        // Global Query Filters para Soft Delete se configurarán en pasos posteriores (Paso 25)
+        // ============================================================
+        // GLOBAL QUERY FILTERS - Soft Delete
+        // ============================================================
+        // Los Global Query Filters aplican automáticamente condiciones WHERE
+        // a TODAS las consultas de las entidades especificadas.
+        // Esto implementa el patrón Soft Delete: los registros marcados como
+        // IsDeleted = true nunca aparecen en consultas normales.
+        
+        // Aplicar filtro a todas las entidades que heredan de BaseEntity
+        foreach (var entityType in modelBuilder.Model.GetEntityTypes())
+        {
+            // Verificar si la entidad hereda de BaseEntity
+            if (typeof(Domain.Common.BaseEntity).IsAssignableFrom(entityType.ClrType))
+            {
+                // Construir la expresión del filtro: e => !e.IsDeleted
+                var parameter = System.Linq.Expressions.Expression.Parameter(entityType.ClrType, "e");
+                var property = System.Linq.Expressions.Expression.Property(parameter, nameof(Domain.Common.BaseEntity.IsDeleted));
+                var filter = System.Linq.Expressions.Expression.Lambda(
+                    System.Linq.Expressions.Expression.Not(property),
+                    parameter
+                );
+
+                // Aplicar el filtro a la entidad
+                modelBuilder.Entity(entityType.ClrType).HasQueryFilter(filter);
+            }
+        }
+
+        // Aplicar filtro a User (que no hereda de BaseEntity pero tiene IsDeleted)
+        modelBuilder.Entity<User>().HasQueryFilter(u => !u.IsDeleted);
+
+        // NOTA: Para consultar registros eliminados intencionalmente, usar:
+        // context.Entities.IgnoreQueryFilters().Where(e => e.IsDeleted).ToList()
     }
 }
