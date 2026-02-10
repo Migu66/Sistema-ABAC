@@ -21,16 +21,16 @@ public enum OperatorType
     NotEquals = 1,
 
     /// <summary>
-    /// Operador mayor que (>).
+    /// Operador mayor que (&gt;).
     /// Verifica si el valor izquierdo es mayor que el derecho.
-    /// Ejemplo: nivel > 5
+    /// Ejemplo: nivel &gt; 5
     /// </summary>
     GreaterThan = 2,
 
     /// <summary>
-    /// Operador menor que (<).
+    /// Operador menor que (&lt;).
     /// Verifica si el valor izquierdo es menor que el derecho.
-    /// Ejemplo: edad < 18
+    /// Ejemplo: edad &lt; 18
     /// </summary>
     LessThan = 3,
 

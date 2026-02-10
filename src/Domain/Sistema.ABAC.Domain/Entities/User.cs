@@ -7,7 +7,7 @@ namespace Sistema.ABAC.Domain.Entities;
 /// y propiedades adicionales para el sistema ABAC.
 /// </summary>
 /// <remarks>
-/// Hereda de IdentityUser<Guid> para obtener todas las funcionalidades de ASP.NET Core Identity
+/// Hereda de IdentityUser&lt;Guid&gt; para obtener todas las funcionalidades de ASP.NET Core Identity
 /// (autenticación, roles, claims, etc.) usando Guid como tipo de clave primaria.
 /// </remarks>
 public class User : IdentityUser<Guid>

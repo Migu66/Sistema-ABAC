@@ -186,8 +186,27 @@ try
     // 7. Agregar controladores
     builder.Services.AddControllers();
 
-    // 8. Configurar Swagger/OpenAPI
-    builder.Services.AddOpenApi();
+    // 8. Configurar Swagger/OpenAPI con documentación XML
+    builder.Services.AddEndpointsApiExplorer();
+    builder.Services.AddSwaggerGen(options =>
+    {
+        // Incluir archivos XML de documentación
+        var xmlFiles = new[]
+        {
+            "Sistema.ABAC.API.xml",
+            "Sistema.ABAC.Application.xml",
+            "Sistema.ABAC.Domain.xml"
+        };
+
+        foreach (var xmlFile in xmlFiles)
+        {
+            var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
+            if (File.Exists(xmlPath))
+            {
+                options.IncludeXmlComments(xmlPath, includeControllerXmlComments: true);
+            }
+        }
+    });
 
     Log.Information("Servicios configurados correctamente");
 
@@ -224,7 +243,14 @@ try
     // 4. Habilitar Swagger en desarrollo
     if (app.Environment.IsDevelopment())
     {
-        app.MapOpenApi();
+        app.UseSwagger();
+        app.UseSwaggerUI(options =>
+        {
+            options.SwaggerEndpoint("/swagger/v1/swagger.json", "Sistema ABAC API v1");
+            options.RoutePrefix = "swagger";
+            options.DocumentTitle = "Sistema ABAC API - Documentación";
+            options.DisplayRequestDuration();
+        });
     }
 
     // 5. Redirección HTTPS
