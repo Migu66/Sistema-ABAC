@@ -1,14 +1,23 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
+using Sistema.ABAC.Domain.Entities;
 
 namespace Sistema.ABAC.Infrastructure.Persistence;
 
 /// <summary>
 /// DbContext principal del sistema ABAC.
-/// Hereda de IdentityDbContext para integrar ASP.NET Core Identity.
+/// Hereda de IdentityDbContext para integrar ASP.NET Core Identity con la entidad User personalizada.
 /// </summary>
-public class AbacDbContext : IdentityDbContext<IdentityUser>
+/// <remarks>
+/// <para>
+/// Se utiliza IdentityDbContext&lt;User, IdentityRole&lt;Guid&gt;, Guid&gt; para:
+/// - User: La entidad personalizada de usuario del dominio que hereda de IdentityUser&lt;Guid&gt;
+/// - IdentityRole&lt;Guid&gt;: Los roles de Identity usando Guid como clave
+/// - Guid: El tipo de dato para las claves primarias de las tablas de Identity
+/// </para>
+/// </remarks>
+public class AbacDbContext : IdentityDbContext<User, IdentityRole<Guid>, Guid>
 {
     public AbacDbContext(DbContextOptions<AbacDbContext> options) : base(options)
     {
