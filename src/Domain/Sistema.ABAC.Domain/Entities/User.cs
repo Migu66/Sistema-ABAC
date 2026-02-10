@@ -57,8 +57,5 @@ public class User : IdentityUser<Guid>
     /// <summary>
     /// Colección de registros de auditoría de acceso realizados por este usuario.
     /// </summary>
-    /// <remarks>
-    /// TEMPORALMENTE COMENTADO: Se descomentará cuando se cree la entidad AccessLog en el paso 19.
-    /// </remarks>
-    // public virtual ICollection<AccessLog> AccessLogs { get; set; } = new List<AccessLog>();
+    public virtual ICollection<AccessLog> AccessLogs { get; set; } = new List<AccessLog>();
 }

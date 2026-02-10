@@ -60,8 +60,5 @@ public class Resource : BaseEntity
     /// <summary>
     /// Colección de registros de auditoría de intentos de acceso a este recurso.
     /// </summary>
-    /// <remarks>
-    /// TEMPORALMENTE COMENTADO: Se descomentará cuando se cree la entidad AccessLog en el paso 19.
-    /// </remarks>
-    // public virtual ICollection<AccessLog> AccessLogs { get; set; } = new List<AccessLog>();
+    public virtual ICollection<AccessLog> AccessLogs { get; set; } = new List<AccessLog>();
 }

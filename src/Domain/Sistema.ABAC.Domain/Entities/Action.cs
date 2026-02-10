@@ -59,8 +59,5 @@ public class Action : BaseEntity
     /// <summary>
     /// Colección de registros de auditoría que registran intentos de realizar esta acción.
     /// </summary>
-    /// <remarks>
-    /// TEMPORALMENTE COMENTADO: Se descomentará cuando se cree la entidad AccessLog en el paso 19.
-    /// </remarks>
-    // public virtual ICollection<AccessLog> AccessLogs { get; set; } = new List<AccessLog>();
+    public virtual ICollection<AccessLog> AccessLogs { get; set; } = new List<AccessLog>();
 }

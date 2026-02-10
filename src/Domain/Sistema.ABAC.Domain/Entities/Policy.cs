@@ -117,8 +117,14 @@ public class Policy : BaseEntity
     /// </remarks>
     public ICollection<PolicyAction> PolicyActions { get; set; } = new List<PolicyAction>();
 
-    // TODO: Paso 19 - Descomentar cuando se cree AccessLog
-    // Registros de auditoría que documentan cuándo esta política fue aplicada en decisiones de acceso.
-    // Permite rastrear cuántas veces se ha aplicado la política y en qué contextos.
-    // public ICollection<AccessLog> AccessLogs { get; set; } = new List<AccessLog>();
+    /// <summary>
+    /// Registros de auditoría que documentan cuándo esta política fue aplicada en decisiones de acceso.
+    /// </summary>
+    /// <remarks>
+    /// Permite rastrear:
+    /// - Cuántas veces se ha aplicado la política
+    /// - En qué contextos (usuarios, recursos, fechas)
+    /// - Si resultó en acceso permitido o denegado
+    /// </remarks>
+    public ICollection<AccessLog> AccessLogs { get; set; } = new List<AccessLog>();
 }
