@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using Sistema.ABAC.Domain.Entities;
+using Sistema.ABAC.Infrastructure.Persistence.Interceptors;
 
 namespace Sistema.ABAC.Infrastructure.Persistence;
 
@@ -21,6 +22,20 @@ public class AbacDbContext : IdentityDbContext<User, IdentityRole<Guid>, Guid>
 {
     public AbacDbContext(DbContextOptions<AbacDbContext> options) : base(options)
     {
+    }
+
+    /// <summary>
+    /// Configura el DbContext con opciones adicionales, incluyendo interceptores.
+    /// </summary>
+    /// <param name="optionsBuilder">Constructor de opciones del contexto.</param>
+    protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+    {
+        base.OnConfiguring(optionsBuilder);
+
+        // Registrar el interceptor de auditoría automática
+        // Este interceptor se ejecuta antes de cada SaveChanges/SaveChangesAsync
+        // para actualizar automáticamente CreatedAt, UpdatedAt e IsDeleted
+        optionsBuilder.AddInterceptors(new AuditableEntityInterceptor());
     }
 
     // ============================================================
