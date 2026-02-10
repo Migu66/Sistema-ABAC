@@ -106,11 +106,16 @@ public class Policy : BaseEntity
     /// </example>
     public ICollection<PolicyCondition> Conditions { get; set; } = new List<PolicyCondition>();
 
-    // TODO: Paso 18 - Descomentar cuando se cree PolicyAction
-    // Relación many-to-many con acciones a través de PolicyAction.
-    // Define qué acciones están cubiertas por esta política.
-    // Ejemplo: Una política puede aplicar a múltiples acciones como ["read", "write", "delete"]
-    // public ICollection<PolicyAction> PolicyActions { get; set; } = new List<PolicyAction>();
+    /// <summary>
+    /// Relación many-to-many con acciones a través de PolicyAction.
+    /// Define qué acciones están cubiertas por esta política.
+    /// </summary>
+    /// <remarks>
+    /// Una política puede aplicar a múltiples acciones. Por ejemplo:
+    /// - Una política de "Lectura Permitida" aplica solo a la acción "read"
+    /// - Una política de "Acceso Completo" aplica a ["read", "write", "delete"]
+    /// </remarks>
+    public ICollection<PolicyAction> PolicyActions { get; set; } = new List<PolicyAction>();
 
     // TODO: Paso 19 - Descomentar cuando se cree AccessLog
     // Registros de auditoría que documentan cuándo esta política fue aplicada en decisiones de acceso.

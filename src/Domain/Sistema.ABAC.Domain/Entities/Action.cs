@@ -54,10 +54,7 @@ public class Action : BaseEntity
     /// Colección de políticas que incluyen esta acción.
     /// Una política puede aplicarse a múltiples acciones (lectura y escritura, por ejemplo).
     /// </summary>
-    /// <remarks>
-    /// TEMPORALMENTE COMENTADO: Se descomentará cuando se cree la entidad PolicyAction en el paso 18.
-    /// </remarks>
-    // public virtual ICollection<PolicyAction> PolicyActions { get; set; } = new List<PolicyAction>();
+    public virtual ICollection<PolicyAction> PolicyActions { get; set; } = new List<PolicyAction>();
 
     /// <summary>
     /// Colección de registros de auditoría que registran intentos de realizar esta acción.
