@@ -23,10 +23,63 @@ public class AbacDbContext : IdentityDbContext<User, IdentityRole<Guid>, Guid>
     {
     }
 
-    // DbSets para las entidades del dominio se agregarán en fases posteriores
-    // public DbSet<Policy> Policies { get; set; }
-    // public DbSet<Resource> Resources { get; set; }
-    // etc...
+    // ============================================================
+    // DbSets - Representan las tablas en la base de datos
+    // ============================================================
+    
+    /// <summary>
+    /// Tabla de atributos del sistema (características que se pueden asignar a usuarios o recursos).
+    /// Ejemplo: "Departamento", "Nivel de Seguridad", "Ubicación".
+    /// </summary>
+    public DbSet<Domain.Entities.Attribute> Attributes { get; set; }
+
+    /// <summary>
+    /// Tabla de atributos asignados a usuarios con sus valores.
+    /// Ejemplo: Usuario Juan tiene atributo "Departamento" con valor "IT".
+    /// </summary>
+    public DbSet<UserAttribute> UserAttributes { get; set; }
+
+    /// <summary>
+    /// Tabla de recursos protegidos por el sistema ABAC.
+    /// Ejemplo: "Archivo Confidencial", "Base de Datos de Clientes".
+    /// </summary>
+    public DbSet<Resource> Resources { get; set; }
+
+    /// <summary>
+    /// Tabla de atributos asignados a recursos con sus valores.
+    /// Ejemplo: Recurso "Archivo X" tiene atributo "Clasificación" con valor "Confidencial".
+    /// </summary>
+    public DbSet<ResourceAttribute> ResourceAttributes { get; set; }
+
+    /// <summary>
+    /// Tabla de acciones que se pueden realizar sobre recursos.
+    /// Ejemplo: "Leer", "Escribir", "Eliminar".
+    /// </summary>
+    public DbSet<Domain.Entities.Action> Actions { get; set; }
+
+    /// <summary>
+    /// Tabla de políticas ABAC que definen las reglas de acceso.
+    /// Ejemplo: "Permitir leer si el usuario tiene nivel >= recurso.nivelRequerido".
+    /// </summary>
+    public DbSet<Policy> Policies { get; set; }
+
+    /// <summary>
+    /// Tabla de condiciones que forman parte de una política.
+    /// Ejemplo: "User.Department == 'IT' AND User.Level >= 5".
+    /// </summary>
+    public DbSet<PolicyCondition> PolicyConditions { get; set; }
+
+    /// <summary>
+    /// Tabla intermedia que relaciona políticas con las acciones a las que aplican.
+    /// Ejemplo: Una política puede aplicar a las acciones "Leer" y "Escribir".
+    /// </summary>
+    public DbSet<PolicyAction> PolicyActions { get; set; }
+
+    /// <summary>
+    /// Tabla de auditoría que registra todos los intentos de acceso al sistema.
+    /// Ejemplo: "Usuario Juan intentó leer Archivo X - Resultado: Permitido".
+    /// </summary>
+    public DbSet<AccessLog> AccessLogs { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
