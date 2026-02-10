@@ -52,10 +52,7 @@ public class User : IdentityUser<Guid>
     /// Los atributos son características que se evalúan en las políticas ABAC
     /// (ej: departamento, nivel, ubicación, etc.).
     /// </summary>
-    /// <remarks>
-    /// TEMPORALMENTE COMENTADO: Se descomentará cuando se cree la entidad UserAttribute en el paso 12.
-    /// </remarks>
-    // public virtual ICollection<UserAttribute> UserAttributes { get; set; } = new List<UserAttribute>();
+    public virtual ICollection<UserAttribute> UserAttributes { get; set; } = new List<UserAttribute>();
 
     /// <summary>
     /// Colección de registros de auditoría de acceso realizados por este usuario.

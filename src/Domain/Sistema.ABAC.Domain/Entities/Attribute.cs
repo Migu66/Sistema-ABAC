@@ -58,10 +58,7 @@ public class Attribute : BaseEntity
     /// <summary>
     /// Colección de valores asignados a usuarios para este atributo.
     /// </summary>
-    /// <remarks>
-    /// TEMPORALMENTE COMENTADO: Se descomentará cuando se cree la entidad UserAttribute en el paso 12.
-    /// </remarks>
-    // public virtual ICollection<UserAttribute> UserAttributes { get; set; } = new List<UserAttribute>();
+    public virtual ICollection<UserAttribute> UserAttributes { get; set; } = new List<UserAttribute>();
 
     /// <summary>
     /// Colección de valores asignados a recursos para este atributo.
