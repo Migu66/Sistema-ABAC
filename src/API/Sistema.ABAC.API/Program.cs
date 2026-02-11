@@ -5,6 +5,7 @@ using Microsoft.IdentityModel.Tokens;
 using Serilog;
 using Serilog.Events;
 using Sistema.ABAC.API.Middleware;
+using Sistema.ABAC.Application.Mappings;
 using Sistema.ABAC.Domain.Entities;
 using Sistema.ABAC.Infrastructure.Persistence;
 using Sistema.ABAC.Infrastructure.Settings;
@@ -187,7 +188,11 @@ try
     // 7. Agregar controladores
     builder.Services.AddControllers();
 
-    // 8. Configurar Swagger/OpenAPI con documentación XML
+    // 8. Configurar AutoMapper
+    builder.Services.AddApplicationAutoMapper();
+    Log.Information("AutoMapper configurado correctamente");
+
+    // 9. Configurar Swagger/OpenAPI con documentación XML
     builder.Services.AddEndpointsApiExplorer();
     builder.Services.AddSwaggerGen(options =>
     {
