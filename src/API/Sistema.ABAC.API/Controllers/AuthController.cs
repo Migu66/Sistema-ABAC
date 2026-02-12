@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using Sistema.ABAC.Application.DTOs.Auth;
 using Sistema.ABAC.Application.Services;
 
 namespace Sistema.ABAC.API.Controllers;
@@ -24,5 +25,26 @@ public class AuthController : ControllerBase
         _logger = logger;
     }
 
-    // Los endpoints (Register, Login, Profile, Refresh) se implementarán en los próximos pasos
+    /// <summary>
+    /// Registra un nuevo usuario en el sistema.
+    /// </summary>
+    /// <param name="registerDto">Datos del usuario a registrar.</param>
+    /// <returns>Token JWT del usuario registrado.</returns>
+    /// <response code="201">Usuario registrado exitosamente.</response>
+    /// <response code="400">Datos de registro inválidos o usuario ya existe.</response>
+    [HttpPost("register")]
+    [ProducesResponseType(typeof(TokenDto), StatusCodes.Status201Created)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<ActionResult<TokenDto>> Register([FromBody] RegisterDto registerDto)
+    {
+        _logger.LogInformation("Iniciando registro de usuario: {UserName}", registerDto.UserName);
+
+        var result = await _authService.RegisterAsync(registerDto);
+
+        _logger.LogInformation("Usuario registrado exitosamente: {UserName}", registerDto.UserName);
+
+        return CreatedAtAction(nameof(Register), new { id = result.User.Id }, result);
+    }
+
+    // Los endpoints (Login, Profile, Refresh) se implementarán en los próximos pasos
 }
