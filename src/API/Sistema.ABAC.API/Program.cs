@@ -5,6 +5,8 @@ using Microsoft.IdentityModel.Tokens;
 using Serilog;
 using Serilog.Events;
 using Sistema.ABAC.API.Middleware;
+using Sistema.ABAC.Application.Mappings;
+using Sistema.ABAC.Domain.Entities;
 using Sistema.ABAC.Infrastructure.Persistence;
 using Sistema.ABAC.Infrastructure.Settings;
 using System.Text;
@@ -59,8 +61,8 @@ try
         })
     );
 
-    // 2. Configurar ASP.NET Core Identity
-    builder.Services.AddIdentity<IdentityUser, IdentityRole>(options =>
+    // 2. Configurar ASP.NET Core Identity con la entidad User personalizada
+    builder.Services.AddIdentity<User, IdentityRole<Guid>>(options =>
     {
         // Configuración de contraseñas
         options.Password.RequireDigit = true;
@@ -186,7 +188,11 @@ try
     // 7. Agregar controladores
     builder.Services.AddControllers();
 
-    // 8. Configurar Swagger/OpenAPI con documentación XML
+    // 8. Configurar AutoMapper
+    builder.Services.AddApplicationAutoMapper();
+    Log.Information("AutoMapper configurado correctamente");
+
+    // 9. Configurar Swagger/OpenAPI con documentación XML
     builder.Services.AddEndpointsApiExplorer();
     builder.Services.AddSwaggerGen(options =>
     {
