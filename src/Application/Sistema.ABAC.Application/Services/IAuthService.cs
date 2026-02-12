@@ -28,4 +28,11 @@ public interface IAuthService
     /// <param name="userId">ID del usuario para el cual generar el token.</param>
     /// <returns>Token de acceso JWT con la información del usuario.</returns>
     Task<TokenDto> GenerateTokenAsync(Guid userId);
+
+    /// <summary>
+    /// Renueva un token JWT expirado usando un refresh token válido.
+    /// </summary>
+    /// <param name="refreshTokenDto">Token de acceso y token de actualización.</param>
+    /// <returns>Nuevo token de acceso JWT.</returns>
+    Task<TokenDto> RefreshTokenAsync(RefreshTokenDto refreshTokenDto);
 }

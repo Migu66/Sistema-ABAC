@@ -97,5 +97,26 @@ public class AuthController : ControllerBase
         return Ok(token.User);
     }
 
-    // El endpoint Refresh se implementará en el próximo paso
+    /// <summary>
+    /// Renueva un token JWT expirado usando un refresh token válido.
+    /// </summary>
+    /// <param name="refreshTokenDto">Token de acceso expirado y refresh token.</param>
+    /// <returns>Nuevo token JWT.</returns>
+    /// <response code="200">Token renovado exitosamente.</response>
+    /// <response code="400">Tokens inválidos o expirados.</response>
+    /// <response code="401">Refresh token no autorizado.</response>
+    [HttpPost("refresh")]
+    [ProducesResponseType(typeof(TokenDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<ActionResult<TokenDto>> RefreshToken([FromBody] RefreshTokenDto refreshTokenDto)
+    {
+        _logger.LogInformation("Intento de renovación de token");
+
+        var result = await _authService.RefreshTokenAsync(refreshTokenDto);
+
+        _logger.LogInformation("Token renovado exitosamente");
+
+        return Ok(result);
+    }
 }
