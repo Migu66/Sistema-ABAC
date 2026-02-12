@@ -10,6 +10,8 @@ using Sistema.ABAC.Domain.Entities;
 using Sistema.ABAC.Infrastructure.Persistence;
 using Sistema.ABAC.Infrastructure.Settings;
 using System.Text;
+using FluentValidation;
+using FluentValidation.AspNetCore;
 
 // Cargar variables de entorno desde archivo .env
 DotNetEnv.Env.Load();
@@ -188,11 +190,17 @@ try
     // 7. Agregar controladores
     builder.Services.AddControllers();
 
-    // 8. Configurar AutoMapper
+    // 8. Configurar FluentValidation
+    builder.Services.AddFluentValidationAutoValidation()
+                    .AddFluentValidationClientsideAdapters();
+    builder.Services.AddValidatorsFromAssemblyContaining<Sistema.ABAC.Application.DTOs.Auth.RegisterDto>();
+    Log.Information("FluentValidation configurado correctamente");
+
+    // 9. Configurar AutoMapper
     builder.Services.AddApplicationAutoMapper();
     Log.Information("AutoMapper configurado correctamente");
 
-    // 9. Configurar Swagger/OpenAPI con documentación XML
+    // 10. Configurar Swagger/OpenAPI con documentación XML
     builder.Services.AddEndpointsApiExplorer();
     builder.Services.AddSwaggerGen(options =>
     {
