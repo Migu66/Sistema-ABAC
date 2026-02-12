@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Sistema.ABAC.Application.Common.Exceptions;
 using Sistema.ABAC.Application.DTOs.Auth;
 using Sistema.ABAC.Application.DTOs.Common;
 using Sistema.ABAC.Application.Services;
@@ -96,8 +97,48 @@ public class UsersController : ControllerBase
         return Ok(user);
     }
 
+    /// <summary>
+    /// Actualiza la información de un usuario existente.
+    /// </summary>
+    /// <param name="id">ID del usuario a actualizar</param>
+    /// <param name="updateDto">Datos a actualizar</param>
+    /// <param name="cancellationToken">Token de cancelación</param>
+    /// <returns>Usuario actualizado</returns>
+    /// <response code="200">Usuario actualizado exitosamente</response>
+    /// <response code="400">Datos de actualización inválidos</response>
+    /// <response code="404">Usuario no encontrado</response>
+    /// <response code="401">Usuario no autenticado</response>
+    [HttpPut("{id:guid}")]
+    [ProducesResponseType(typeof(UserDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<ActionResult<UserDto>> Update(
+        Guid id,
+        [FromBody] UpdateUserDto updateDto,
+        CancellationToken cancellationToken = default)
+    {
+        _logger.LogInformation("Actualizando usuario con ID: {UserId}", id);
+
+        try
+        {
+            var user = await _userService.UpdateAsync(id, updateDto, cancellationToken);
+            _logger.LogInformation("Usuario {UserId} actualizado exitosamente", id);
+            return Ok(user);
+        }
+        catch (NotFoundException ex)
+        {
+            _logger.LogWarning(ex, "Usuario no encontrado al intentar actualizar: {UserId}", id);
+            return NotFound(new { message = ex.Message });
+        }
+        catch (ValidationException ex)
+        {
+            _logger.LogWarning(ex, "Error de validación al actualizar usuario: {UserId}", id);
+            return BadRequest(new { message = ex.Message, errors = ex.Errors });
+        }
+    }
+
     // Los siguientes endpoints se implementarán en los próximos pasos:
-    // - PUT /api/users/{id} (Paso 52)
     // - DELETE /api/users/{id} (Paso 53)
     // - GET /api/users/{id}/attributes (Paso 54)
     // - POST /api/users/{id}/attributes (Paso 55)
