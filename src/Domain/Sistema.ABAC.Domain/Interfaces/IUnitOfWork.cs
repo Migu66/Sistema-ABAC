@@ -1,3 +1,5 @@
+using Sistema.ABAC.Domain.Entities;
+
 namespace Sistema.ABAC.Domain.Interfaces;
 
 /// <summary>
@@ -58,6 +60,16 @@ public interface IUnitOfWork : IDisposable, IAsyncDisposable
     /// Repositorio para logs de auditoría.
     /// </summary>
     IAccessLogRepository AccessLogs { get; }
+
+    /// <summary>
+    /// Repositorio para atributos de usuarios (asignaciones).
+    /// </summary>
+    IRepository<UserAttribute> UserAttributes { get; }
+
+    /// <summary>
+    /// Repositorio para atributos de recursos (asignaciones).
+    /// </summary>
+    IRepository<ResourceAttribute> ResourceAttributes { get; }
 
     /// <summary>
     /// Guarda todos los cambios pendientes en la base de datos.
