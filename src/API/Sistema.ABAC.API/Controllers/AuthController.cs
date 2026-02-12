@@ -46,5 +46,26 @@ public class AuthController : ControllerBase
         return CreatedAtAction(nameof(Register), new { id = result.User.Id }, result);
     }
 
-    // Los endpoints (Login, Profile, Refresh) se implementarán en los próximos pasos
+    /// <summary>
+    /// Autentica un usuario existente en el sistema.
+    /// </summary>
+    /// <param name="loginDto">Credenciales de inicio de sesión.</param>
+    /// <returns>Token JWT del usuario autenticado.</returns>
+    /// <response code="200">Autenticación exitosa.</response>
+    /// <response code="401">Credenciales inválidas.</response>
+    [HttpPost("login")]
+    [ProducesResponseType(typeof(TokenDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<ActionResult<TokenDto>> Login([FromBody] LoginDto loginDto)
+    {
+        _logger.LogInformation("Intento de inicio de sesión para usuario: {UserName}", loginDto.UserName);
+
+        var result = await _authService.LoginAsync(loginDto);
+
+        _logger.LogInformation("Inicio de sesión exitoso para usuario: {UserName}", loginDto.UserName);
+
+        return Ok(result);
+    }
+
+    // Los endpoints (Profile, Refresh) se implementarán en los próximos pasos
 }
