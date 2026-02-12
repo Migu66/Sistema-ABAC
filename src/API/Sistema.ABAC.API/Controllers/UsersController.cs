@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Sistema.ABAC.Application.Common.Exceptions;
+using Sistema.ABAC.Application.DTOs;
 using Sistema.ABAC.Application.DTOs.Auth;
 using Sistema.ABAC.Application.DTOs.Common;
 using Sistema.ABAC.Application.Services;
@@ -169,8 +170,44 @@ public class UsersController : ControllerBase
         }
     }
 
+    #region Gestión de Atributos
+
+    /// <summary>
+    /// Obtiene todos los atributos asignados a un usuario.
+    /// </summary>
+    /// <param name="id">ID del usuario</param>
+    /// <param name="includeExpired">Incluir atributos expirados (por defecto false)</param>
+    /// <param name="cancellationToken">Token de cancelación</param>
+    /// <returns>Lista de atributos del usuario</returns>
+    /// <response code="200">Lista de atributos obtenida exitosamente</response>
+    /// <response code="404">Usuario no encontrado</response>
+    /// <response code="401">Usuario no autenticado</response>
+    [HttpGet("{id:guid}/attributes")]
+    [ProducesResponseType(typeof(IEnumerable<UserAttributeDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<ActionResult<IEnumerable<UserAttributeDto>>> GetUserAttributes(
+        Guid id,
+        [FromQuery] bool includeExpired = false,
+        CancellationToken cancellationToken = default)
+    {
+        _logger.LogInformation("Obteniendo atributos del usuario {UserId}", id);
+
+        try
+        {
+            var attributes = await _userService.GetUserAttributesAsync(id, includeExpired, cancellationToken);
+            return Ok(attributes);
+        }
+        catch (NotFoundException ex)
+        {
+            _logger.LogWarning(ex, "Usuario no encontrado al obtener atributos: {UserId}", id);
+            return NotFound(new { message = ex.Message });
+        }
+    }
+
+    #endregion
+
     // Los siguientes endpoints se implementarán en los próximos pasos:
-    // - GET /api/users/{id}/attributes (Paso 54)
     // - POST /api/users/{id}/attributes (Paso 55)
     // - DELETE /api/users/{id}/attributes/{attributeId} (Paso 56)
 }
