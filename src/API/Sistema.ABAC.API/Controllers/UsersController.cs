@@ -64,8 +64,39 @@ public class UsersController : ControllerBase
         return Ok(result);
     }
 
+    /// <summary>
+    /// Obtiene un usuario específico por su ID.
+    /// </summary>
+    /// <param name="id">ID del usuario</param>
+    /// <param name="includeAttributes">Incluir atributos del usuario (por defecto false)</param>
+    /// <param name="cancellationToken">Token de cancelación</param>
+    /// <returns>Información del usuario</returns>
+    /// <response code="200">Usuario encontrado</response>
+    /// <response code="404">Usuario no encontrado</response>
+    /// <response code="401">Usuario no autenticado</response>
+    [HttpGet("{id:guid}")]
+    [ProducesResponseType(typeof(UserDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<ActionResult<UserDto>> GetById(
+        Guid id,
+        [FromQuery] bool includeAttributes = false,
+        CancellationToken cancellationToken = default)
+    {
+        _logger.LogInformation("Obteniendo usuario con ID: {UserId}", id);
+
+        var user = await _userService.GetByIdAsync(id, includeAttributes, cancellationToken);
+
+        if (user == null)
+        {
+            _logger.LogWarning("Usuario con ID {UserId} no encontrado", id);
+            return NotFound(new { message = $"Usuario con ID {id} no encontrado" });
+        }
+
+        return Ok(user);
+    }
+
     // Los siguientes endpoints se implementarán en los próximos pasos:
-    // - GET /api/users/{id} (Paso 51)
     // - PUT /api/users/{id} (Paso 52)
     // - DELETE /api/users/{id} (Paso 53)
     // - GET /api/users/{id}/attributes (Paso 54)
