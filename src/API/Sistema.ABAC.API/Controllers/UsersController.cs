@@ -138,8 +138,38 @@ public class UsersController : ControllerBase
         }
     }
 
+    /// <summary>
+    /// Elimina un usuario del sistema (soft delete).
+    /// El usuario se marca como eliminado pero no se borra físicamente de la base de datos.
+    /// </summary>
+    /// <param name="id">ID del usuario a eliminar</param>
+    /// <param name="cancellationToken">Token de cancelación</param>
+    /// <returns>Confirmación de eliminación</returns>
+    /// <response code="204">Usuario eliminado exitosamente</response>
+    /// <response code="404">Usuario no encontrado</response>
+    /// <response code="401">Usuario no autenticado</response>
+    [HttpDelete("{id:guid}")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<IActionResult> Delete(Guid id, CancellationToken cancellationToken = default)
+    {
+        _logger.LogInformation("Eliminando usuario con ID: {UserId}", id);
+
+        try
+        {
+            await _userService.DeleteAsync(id, cancellationToken);
+            _logger.LogInformation("Usuario {UserId} eliminado exitosamente", id);
+            return NoContent();
+        }
+        catch (NotFoundException ex)
+        {
+            _logger.LogWarning(ex, "Usuario no encontrado al intentar eliminar: {UserId}", id);
+            return NotFound(new { message = ex.Message });
+        }
+    }
+
     // Los siguientes endpoints se implementarán en los próximos pasos:
-    // - DELETE /api/users/{id} (Paso 53)
     // - GET /api/users/{id}/attributes (Paso 54)
     // - POST /api/users/{id}/attributes (Paso 55)
     // - DELETE /api/users/{id}/attributes/{attributeId} (Paso 56)
