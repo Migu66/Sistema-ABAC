@@ -205,6 +205,51 @@ public class UsersController : ControllerBase
         }
     }
 
+    /// <summary>
+    /// Asigna un nuevo atributo a un usuario.
+    /// </summary>
+    /// <param name="id">ID del usuario</param>
+    /// <param name="assignDto">Datos del atributo a asignar</param>
+    /// <param name="cancellationToken">Token de cancelación</param>
+    /// <returns>Atributo asignado</returns>
+    /// <response code="201">Atributo asignado exitosamente</response>
+    /// <response code="400">Datos de asignación inválidos o atributo ya asignado</response>
+    /// <response code="404">Usuario o atributo no encontrado</response>
+    /// <response code="401">Usuario no autenticado</response>
+    [HttpPost("{id:guid}/attributes")]
+    [ProducesResponseType(typeof(UserAttributeDto), StatusCodes.Status201Created)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<ActionResult<UserAttributeDto>> AssignAttribute(
+        Guid id,
+        [FromBody] AssignUserAttributeDto assignDto,
+        CancellationToken cancellationToken = default)
+    {
+        _logger.LogInformation("Asignando atributo {AttributeId} al usuario {UserId}", assignDto.AttributeId, id);
+
+        try
+        {
+            var attribute = await _userService.AssignAttributeAsync(id, assignDto, cancellationToken);
+            _logger.LogInformation("Atributo {AttributeId} asignado exitosamente al usuario {UserId}", assignDto.AttributeId, id);
+            
+            return CreatedAtAction(
+                nameof(GetUserAttributes),
+                new { id },
+                attribute);
+        }
+        catch (NotFoundException ex)
+        {
+            _logger.LogWarning(ex, "Recurso no encontrado al asignar atributo");
+            return NotFound(new { message = ex.Message });
+        }
+        catch (ValidationException ex)
+        {
+            _logger.LogWarning(ex, "Error de validación al asignar atributo");
+            return BadRequest(new { message = ex.Message, errors = ex.Errors });
+        }
+    }
+
     #endregion
 
     // Los siguientes endpoints se implementarán en los próximos pasos:
