@@ -26,7 +26,7 @@ public class RegisterDtoValidator : AbstractValidator<RegisterDto>
             .Matches(@"[A-Z]").WithMessage("La contraseña debe contener al menos una mayúscula.")
             .Matches(@"[a-z]").WithMessage("La contraseña debe contener al menos una minúscula.")
             .Matches(@"[0-9]").WithMessage("La contraseña debe contener al menos un número.")
-            .Matches(@"[@$!%*?&#^()]").WithMessage("La contraseña debe contener al menos un carácter especial (@$!%*?&#^()).");
+            .Matches(@"[@$!%*?&#^()_]").WithMessage("La contraseña debe contener al menos un carácter especial (@$!%*?&#^()).");
 
         RuleFor(x => x.ConfirmPassword)
             .NotEmpty().WithMessage("La confirmación de contraseña es requerida.")
