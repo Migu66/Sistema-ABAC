@@ -250,10 +250,40 @@ public class UsersController : ControllerBase
         }
     }
 
-    #endregion
+    /// <summary>
+    /// Remueve un atributo de un usuario.
+    /// </summary>
+    /// <param name="id">ID del usuario</param>
+    /// <param name="attributeId">ID del atributo a remover</param>
+    /// <param name="cancellationToken">Token de cancelación</param>
+    /// <returns>Confirmación de eliminación</returns>
+    /// <response code="204">Atributo removido exitosamente</response>
+    /// <response code="404">Usuario o atributo no encontrado</response>
+    /// <response code="401">Usuario no autenticado</response>
+    [HttpDelete("{id:guid}/attributes/{attributeId:guid}")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<IActionResult> RemoveAttribute(
+        Guid id,
+        Guid attributeId,
+        CancellationToken cancellationToken = default)
+    {
+        _logger.LogInformation("Quitando atributo {AttributeId} del usuario {UserId}", attributeId, id);
 
-    // Los siguientes endpoints se implementarán en los próximos pasos:
-    // - POST /api/users/{id}/attributes (Paso 55)
-    // - DELETE /api/users/{id}/attributes/{attributeId} (Paso 56)
+        try
+        {
+            await _userService.RemoveAttributeAsync(id, attributeId, cancellationToken);
+            _logger.LogInformation("Atributo {AttributeId} removido exitosamente del usuario {UserId}", attributeId, id);
+            return NoContent();
+        }
+        catch (NotFoundException ex)
+        {
+            _logger.LogWarning(ex, "Recurso no encontrado al remover atributo");
+            return NotFound(new { message = ex.Message });
+        }
+    }
+
+    #endregion
 }
 
