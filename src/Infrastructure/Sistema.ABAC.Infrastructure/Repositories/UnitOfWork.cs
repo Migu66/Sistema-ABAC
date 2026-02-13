@@ -24,6 +24,8 @@ public class UnitOfWork : IUnitOfWork
     private IAccessLogRepository? _accessLogs;
     private IRepository<UserAttribute>? _userAttributes;
     private IRepository<ResourceAttribute>? _resourceAttributes;
+    private IRepository<PolicyCondition>? _policyConditions;
+    private IRepository<PolicyAction>? _policyActions;
 
     public UnitOfWork(
         AbacDbContext context,
@@ -102,6 +104,24 @@ public class UnitOfWork : IUnitOfWork
         {
             _resourceAttributes ??= new Repository<ResourceAttribute>(_context);
             return _resourceAttributes;
+        }
+    }
+
+    public IRepository<PolicyCondition> PolicyConditions
+    {
+        get
+        {
+            _policyConditions ??= new Repository<PolicyCondition>(_context);
+            return _policyConditions;
+        }
+    }
+
+    public IRepository<PolicyAction> PolicyActions
+    {
+        get
+        {
+            _policyActions ??= new Repository<PolicyAction>(_context);
+            return _policyActions;
         }
     }
 
