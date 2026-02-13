@@ -72,6 +72,16 @@ public interface IUnitOfWork : IDisposable, IAsyncDisposable
     IRepository<ResourceAttribute> ResourceAttributes { get; }
 
     /// <summary>
+    /// Repositorio para condiciones de políticas.
+    /// </summary>
+    IRepository<PolicyCondition> PolicyConditions { get; }
+
+    /// <summary>
+    /// Repositorio para asociaciones entre políticas y acciones.
+    /// </summary>
+    IRepository<PolicyAction> PolicyActions { get; }
+
+    /// <summary>
     /// Guarda todos los cambios pendientes en la base de datos.
     /// </summary>
     /// <param name="cancellationToken">Token de cancelación</param>
