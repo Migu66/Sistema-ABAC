@@ -47,16 +47,7 @@ public class PolicyEvaluator : IPolicyEvaluator
         {
             cancellationToken.ThrowIfCancellationRequested();
 
-            var allConditionsMatched = true;
-            foreach (var condition in policy.Conditions)
-            {
-                var conditionMatched = await _conditionEvaluator.EvaluateAsync(condition, context, cancellationToken);
-                if (!conditionMatched)
-                {
-                    allConditionsMatched = false;
-                    break;
-                }
-            }
+            var allConditionsMatched = await AreAllConditionsMatchedAsync(policy, context, cancellationToken);
 
             if (allConditionsMatched)
             {
@@ -96,6 +87,32 @@ public class PolicyEvaluator : IPolicyEvaluator
                 policyAction.Action?.Code != null &&
                 policyAction.Action.Code.Equals(actionCode, StringComparison.OrdinalIgnoreCase)))
             .ToList();
+    }
+
+    private async Task<bool> AreAllConditionsMatchedAsync(
+        Policy policy,
+        EvaluationContext context,
+        CancellationToken cancellationToken)
+    {
+        // Lógica AND explícita: una política aplica solo si TODAS sus condiciones son verdaderas.
+        // Política sin condiciones se considera no aplicable por seguridad.
+        if (policy.Conditions == null || policy.Conditions.Count == 0)
+        {
+            return false;
+        }
+
+        foreach (var condition in policy.Conditions)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+
+            var conditionMatched = await _conditionEvaluator.EvaluateAsync(condition, context, cancellationToken);
+            if (!conditionMatched)
+            {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     private static Guid? TryGetActionId(IDictionary<string, object?> actionAttributes)
