@@ -63,11 +63,39 @@ public class AttributeCollectorService : IAttributeCollectorService
     }
 
     /// <inheritdoc />
-    public Task<IDictionary<string, object?>> CollectResourceAttributesAsync(
+    public async Task<IDictionary<string, object?>> CollectResourceAttributesAsync(
         Guid resourceId,
         CancellationToken cancellationToken = default)
     {
-        throw new NotImplementedException("Pendiente de implementación en el paso 95.");
+        _logger.LogInformation("Recopilando atributos del recurso {ResourceId}", resourceId);
+
+        var resource = await _unitOfWork.Resources.GetWithAttributesAsync(resourceId, cancellationToken);
+        if (resource == null || resource.IsDeleted)
+        {
+            throw new NotFoundException("Recurso", resourceId);
+        }
+
+        var resourceAttributes = new Dictionary<string, object?>(StringComparer.OrdinalIgnoreCase);
+
+        foreach (var resourceAttribute in resource.ResourceAttributes)
+        {
+            var attribute = resourceAttribute.Attribute;
+            var attributeKey = attribute?.Key;
+
+            if (attribute == null || string.IsNullOrWhiteSpace(attributeKey))
+            {
+                continue;
+            }
+
+            resourceAttributes[attributeKey] = ConvertValue(resourceAttribute.Value, attribute.Type);
+        }
+
+        _logger.LogInformation(
+            "Se recopilaron {Count} atributos para recurso {ResourceId}",
+            resourceAttributes.Count,
+            resourceId);
+
+        return resourceAttributes;
     }
 
     /// <inheritdoc />
