@@ -48,9 +48,11 @@ public class AccessControlService : IAccessControlService
 
         var subjectAttributes = await _attributeCollectorService
             .CollectSubjectAttributesAsync(userId, cancellationToken);
+        subjectAttributes["userId"] = userId;
 
         var resourceAttributes = await _attributeCollectorService
             .CollectResourceAttributesAsync(resourceId, cancellationToken);
+        resourceAttributes["resourceId"] = resourceId;
 
         var environmentAttributes = await _attributeCollectorService
             .CollectEnvironmentAttributesAsync(context, cancellationToken);

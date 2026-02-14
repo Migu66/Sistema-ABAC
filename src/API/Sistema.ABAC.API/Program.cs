@@ -8,6 +8,7 @@ using Serilog.Events;
 using Sistema.ABAC.API.Authorization;
 using Sistema.ABAC.API.Middleware;
 using Sistema.ABAC.Application.Mappings;
+using Sistema.ABAC.Application.Services;
 using Sistema.ABAC.Application.Services.ABAC;
 using Sistema.ABAC.Domain.Interfaces;
 using Sistema.ABAC.Infrastructure.Repositories;
@@ -101,6 +102,7 @@ try
     builder.Services.AddScoped<IConditionEvaluator, ConditionEvaluator>();
     builder.Services.AddScoped<IPolicyEvaluator, PolicyEvaluator>();
     builder.Services.AddScoped<IAccessControlService, AccessControlService>();
+    builder.Services.AddScoped<IAuditService, AuditService>();
     builder.Services.AddScoped<IAuthorizationHandler, AbacAuthorizationHandler>();
 
     // 3. Configurar JWT Settings

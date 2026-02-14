@@ -1,4 +1,5 @@
 using Microsoft.Extensions.Logging;
+using Sistema.ABAC.Application.Services;
 using Sistema.ABAC.Domain.Entities;
 using Sistema.ABAC.Domain.Enums;
 using Sistema.ABAC.Domain.Interfaces;
@@ -13,15 +14,18 @@ public class PolicyEvaluator : IPolicyEvaluator
 {
     private readonly IUnitOfWork _unitOfWork;
     private readonly IConditionEvaluator _conditionEvaluator;
+    private readonly IAuditService _auditService;
     private readonly ILogger<PolicyEvaluator> _logger;
 
     public PolicyEvaluator(
         IUnitOfWork unitOfWork,
         IConditionEvaluator conditionEvaluator,
+        IAuditService auditService,
         ILogger<PolicyEvaluator> logger)
     {
         _unitOfWork = unitOfWork;
         _conditionEvaluator = conditionEvaluator;
+        _auditService = auditService;
         _logger = logger;
     }
 
@@ -39,6 +43,12 @@ public class PolicyEvaluator : IPolicyEvaluator
 
         if (candidatePolicies.Count == 0)
         {
+            await LogDecisionAsync(
+                context,
+                false,
+                "No hay políticas activas candidatas para la acción solicitada.",
+                null,
+                cancellationToken);
             return false;
         }
 
@@ -62,12 +72,21 @@ public class PolicyEvaluator : IPolicyEvaluator
 
         var combiningStrategy = ResolveCombiningStrategy(context);
         var finalDecision = DetermineDecision(applicablePolicies, combiningStrategy);
+        var decisivePolicy = GetDecisivePolicy(applicablePolicies, combiningStrategy, finalDecision);
+        var reason = BuildDecisionReason(finalDecision, combiningStrategy, applicablePolicies.Count, decisivePolicy);
 
         _logger.LogInformation(
             "Decisión ABAC final: {Decision}. Estrategia: {Strategy}. Políticas aplicables: {Count}",
             finalDecision,
             combiningStrategy,
             applicablePolicies.Count);
+
+        await LogDecisionAsync(
+            context,
+            finalDecision,
+            reason,
+            decisivePolicy,
+            cancellationToken);
 
         return finalDecision;
     }
@@ -189,6 +208,114 @@ public class PolicyEvaluator : IPolicyEvaluator
             PolicyCombiningStrategy.PermitOverrides => hasPermit,
             _ => !hasDeny && hasPermit
         };
+    }
+
+    private static Policy? GetDecisivePolicy(
+        IReadOnlyCollection<Policy> applicablePolicies,
+        PolicyCombiningStrategy combiningStrategy,
+        bool finalDecision)
+    {
+        if (applicablePolicies.Count == 0)
+        {
+            return null;
+        }
+
+        return combiningStrategy switch
+        {
+            PolicyCombiningStrategy.PermitOverrides when finalDecision => applicablePolicies
+                .Where(policy => policy.Effect == PolicyEffect.Permit)
+                .OrderByDescending(policy => policy.Priority)
+                .FirstOrDefault(),
+
+            PolicyCombiningStrategy.PermitOverrides => applicablePolicies
+                .Where(policy => policy.Effect == PolicyEffect.Deny)
+                .OrderByDescending(policy => policy.Priority)
+                .FirstOrDefault(),
+
+            _ when !finalDecision => applicablePolicies
+                .Where(policy => policy.Effect == PolicyEffect.Deny)
+                .OrderByDescending(policy => policy.Priority)
+                .FirstOrDefault(),
+
+            _ => applicablePolicies
+                .Where(policy => policy.Effect == PolicyEffect.Permit)
+                .OrderByDescending(policy => policy.Priority)
+                .FirstOrDefault()
+        };
+    }
+
+    private static string BuildDecisionReason(
+        bool finalDecision,
+        PolicyCombiningStrategy combiningStrategy,
+        int applicablePoliciesCount,
+        Policy? decisivePolicy)
+    {
+        var decisionText = finalDecision ? "Permit" : "Deny";
+        if (decisivePolicy == null)
+        {
+            return $"Decisión {decisionText} con estrategia {combiningStrategy}. Políticas aplicables: {applicablePoliciesCount}.";
+        }
+
+        return $"Decisión {decisionText} con estrategia {combiningStrategy}. Política decisiva: {decisivePolicy.Name} ({decisivePolicy.Id}).";
+    }
+
+    private async Task LogDecisionAsync(
+        EvaluationContext context,
+        bool finalDecision,
+        string reason,
+        Policy? decisivePolicy,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            var userId = TryGetGuidFromAttributes(context.Subject, "userId", "id");
+            if (!userId.HasValue)
+            {
+                return;
+            }
+
+            var resourceId = TryGetGuidFromAttributes(context.Resource, "resourceId", "id");
+            var actionId = TryGetGuidFromAttributes(context.Action, "actionId", "id");
+            var ipAddress = context.Environment.TryGetValue("ipAddress", out var ip) ? ip?.ToString() : null;
+
+            await _auditService.LogAccessEvaluationAsync(
+                userId: userId.Value,
+                resourceId: resourceId,
+                actionId: actionId,
+                result: finalDecision ? "Permit" : "Deny",
+                reason: reason,
+                policyId: decisivePolicy?.Id,
+                context: null,
+                ipAddress: ipAddress,
+                cancellationToken: cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "No fue posible registrar auditoría automática de decisión ABAC.");
+        }
+    }
+
+    private static Guid? TryGetGuidFromAttributes(IDictionary<string, object?> attributes, params string[] keys)
+    {
+        foreach (var key in keys)
+        {
+            if (!attributes.TryGetValue(key, out var value) || value == null)
+            {
+                continue;
+            }
+
+            if (value is Guid guidValue)
+            {
+                return guidValue;
+            }
+
+            if (Guid.TryParse(value.ToString(), out var parsedGuid))
+            {
+                return parsedGuid;
+            }
+        }
+
+        return null;
     }
 
     private enum PolicyCombiningStrategy
