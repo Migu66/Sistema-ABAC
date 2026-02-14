@@ -103,7 +103,46 @@ public class AttributeCollectorService : IAttributeCollectorService
         IDictionary<string, object?>? contextAttributes = null,
         CancellationToken cancellationToken = default)
     {
-        throw new NotImplementedException("Pendiente de implementación en el paso 96.");
+        cancellationToken.ThrowIfCancellationRequested();
+
+        var utcNow = DateTime.UtcNow;
+        var localNow = DateTime.Now;
+
+        var environmentAttributes = new Dictionary<string, object?>(StringComparer.OrdinalIgnoreCase)
+        {
+            ["currentUtcDateTime"] = utcNow,
+            ["currentLocalDateTime"] = localNow,
+            ["currentDate"] = localNow.Date,
+            ["currentHour"] = localNow.Hour,
+            ["dayOfWeek"] = localNow.DayOfWeek.ToString(),
+            ["dayOfWeekNumber"] = (int)localNow.DayOfWeek,
+            ["ipAddress"] = null,
+            ["location"] = null
+        };
+
+        if (contextAttributes != null)
+        {
+            foreach (var attribute in contextAttributes)
+            {
+                environmentAttributes[attribute.Key] = attribute.Value;
+            }
+
+            if (contextAttributes.TryGetValue("ip", out var ipValue) && ipValue != null)
+            {
+                environmentAttributes["ipAddress"] = ipValue;
+            }
+
+            if (contextAttributes.TryGetValue("geoLocation", out var geoLocationValue) && geoLocationValue != null)
+            {
+                environmentAttributes["location"] = geoLocationValue;
+            }
+        }
+
+        _logger.LogInformation(
+            "Se recopilaron {Count} atributos de entorno para evaluación ABAC",
+            environmentAttributes.Count);
+
+        return Task.FromResult<IDictionary<string, object?>>(environmentAttributes);
     }
 
     private object? ConvertValue(string? rawValue, AttributeType attributeType)
