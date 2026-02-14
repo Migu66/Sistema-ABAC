@@ -1,11 +1,16 @@
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Serilog;
 using Serilog.Events;
+using Sistema.ABAC.API.Authorization;
 using Sistema.ABAC.API.Middleware;
 using Sistema.ABAC.Application.Mappings;
+using Sistema.ABAC.Application.Services.ABAC;
+using Sistema.ABAC.Domain.Interfaces;
+using Sistema.ABAC.Infrastructure.Repositories;
 using Sistema.ABAC.Domain.Entities;
 using Sistema.ABAC.Infrastructure.Persistence;
 using Sistema.ABAC.Infrastructure.Settings;
@@ -90,6 +95,14 @@ try
     .AddEntityFrameworkStores<AbacDbContext>()
     .AddDefaultTokenProviders();
 
+    // 2.1 Registrar servicios ABAC y dependencias del handler de autorización
+    builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
+    builder.Services.AddScoped<IAttributeCollectorService, AttributeCollectorService>();
+    builder.Services.AddScoped<IConditionEvaluator, ConditionEvaluator>();
+    builder.Services.AddScoped<IPolicyEvaluator, PolicyEvaluator>();
+    builder.Services.AddScoped<IAccessControlService, AccessControlService>();
+    builder.Services.AddScoped<IAuthorizationHandler, AbacAuthorizationHandler>();
+
     // 3. Configurar JWT Settings
     var jwtSettings = new JwtSettings();
     builder.Configuration.GetSection(JwtSettings.SectionName).Bind(jwtSettings);
@@ -154,8 +167,9 @@ try
     // 5. Configurar Autorización
     builder.Services.AddAuthorization(options =>
     {
-        // Políticas de autorización personalizadas se agregarán en fases posteriores
-        // options.AddPolicy("AbacPolicy", policy => policy.Requirements.Add(new AbacRequirement()));
+        options.AddPolicy(AbacAuthorizeAttribute.PolicyName,
+            policy => policy.RequireAuthenticatedUser()
+                            .AddRequirements(new AbacRequirement()));
     });
 
     // 6. Configurar CORS
