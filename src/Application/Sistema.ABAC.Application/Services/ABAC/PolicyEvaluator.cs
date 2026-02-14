@@ -1,5 +1,6 @@
 using Microsoft.Extensions.Logging;
 using Sistema.ABAC.Domain.Entities;
+using Sistema.ABAC.Domain.Enums;
 using Sistema.ABAC.Domain.Interfaces;
 
 namespace Sistema.ABAC.Application.Services.ABAC;
@@ -59,7 +60,16 @@ public class PolicyEvaluator : IPolicyEvaluator
             "Se encontraron {Count} políticas activas aplicables al contexto.",
             applicablePolicies.Count);
 
-        return applicablePolicies.Count > 0;
+        var combiningStrategy = ResolveCombiningStrategy(context);
+        var finalDecision = DetermineDecision(applicablePolicies, combiningStrategy);
+
+        _logger.LogInformation(
+            "Decisión ABAC final: {Decision}. Estrategia: {Strategy}. Políticas aplicables: {Count}",
+            finalDecision,
+            combiningStrategy,
+            applicablePolicies.Count);
+
+        return finalDecision;
     }
 
     private async Task<List<Policy>> GetCandidatePoliciesAsync(
@@ -143,5 +153,47 @@ public class PolicyEvaluator : IPolicyEvaluator
         }
 
         return null;
+    }
+
+    private static PolicyCombiningStrategy ResolveCombiningStrategy(EvaluationContext context)
+    {
+        if (context.Environment.TryGetValue("combiningStrategy", out var strategyValue) ||
+            context.Environment.TryGetValue("policyCombiningStrategy", out strategyValue))
+        {
+            var strategyText = strategyValue?.ToString();
+            if (!string.IsNullOrWhiteSpace(strategyText) &&
+                Enum.TryParse<PolicyCombiningStrategy>(strategyText, true, out var parsedStrategy))
+            {
+                return parsedStrategy;
+            }
+        }
+
+        // Estrategia por defecto segura.
+        return PolicyCombiningStrategy.DenyOverrides;
+    }
+
+    private static bool DetermineDecision(
+        IReadOnlyCollection<Policy> applicablePolicies,
+        PolicyCombiningStrategy combiningStrategy)
+    {
+        if (applicablePolicies.Count == 0)
+        {
+            return false;
+        }
+
+        var hasPermit = applicablePolicies.Any(policy => policy.Effect == PolicyEffect.Permit);
+        var hasDeny = applicablePolicies.Any(policy => policy.Effect == PolicyEffect.Deny);
+
+        return combiningStrategy switch
+        {
+            PolicyCombiningStrategy.PermitOverrides => hasPermit,
+            _ => !hasDeny && hasPermit
+        };
+    }
+
+    private enum PolicyCombiningStrategy
+    {
+        DenyOverrides,
+        PermitOverrides
     }
 }
