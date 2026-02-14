@@ -1,7 +1,8 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Sistema.ABAC.Application.DTOs;
 using Sistema.ABAC.Application.Services.ABAC;
-using System.ComponentModel.DataAnnotations;
+using AbacAuthorizationResult = Sistema.ABAC.Application.Services.ABAC.AuthorizationResult;
 
 namespace Sistema.ABAC.API.Controllers;
 
@@ -32,12 +33,12 @@ public class AccessController : ControllerBase
     /// </summary>
     /// <param name="request">Datos de evaluación: usuario, recurso, acción y contexto opcional</param>
     /// <param name="cancellationToken">Token de cancelación</param>
-    /// <returns>Resultado básico del procesamiento de evaluación</returns>
+    /// <returns>Resultado completo de autorización ABAC</returns>
     [HttpPost("evaluate")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(AbacAuthorizationResult), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    public async Task<ActionResult<object>> Evaluate(
+    public async Task<ActionResult<AbacAuthorizationResult>> Evaluate(
         [FromBody] EvaluateAccessRequest request,
         CancellationToken cancellationToken = default)
     {
@@ -54,39 +55,6 @@ public class AccessController : ControllerBase
             request.Context,
             cancellationToken);
 
-        return Ok(new
-        {
-            Processed = true,
-            Decision = result.Decision.ToString()
-        });
+        return Ok(result);
     }
-}
-
-/// <summary>
-/// DTO para solicitudes de evaluación de acceso ABAC.
-/// </summary>
-public class EvaluateAccessRequest
-{
-    /// <summary>
-    /// ID del usuario a evaluar.
-    /// </summary>
-    [Required]
-    public Guid UserId { get; set; }
-
-    /// <summary>
-    /// ID del recurso al que se quiere acceder.
-    /// </summary>
-    [Required]
-    public Guid ResourceId { get; set; }
-
-    /// <summary>
-    /// ID de la acción solicitada.
-    /// </summary>
-    [Required]
-    public Guid ActionId { get; set; }
-
-    /// <summary>
-    /// Atributos opcionales de contexto para la evaluación.
-    /// </summary>
-    public Dictionary<string, object?>? Context { get; set; }
 }
