@@ -2,6 +2,7 @@ using Microsoft.Extensions.Logging;
 using Sistema.ABAC.Domain.Entities;
 using Sistema.ABAC.Domain.Enums;
 using System.Globalization;
+using System.Linq.Dynamic.Core;
 
 namespace Sistema.ABAC.Application.Services.ABAC;
 
@@ -51,8 +52,12 @@ public class ConditionEvaluator : IConditionEvaluator
         {
             OperatorType.Equals => EvaluateEquals(actualValue, condition.ExpectedValue),
             OperatorType.NotEquals => !EvaluateEquals(actualValue, condition.ExpectedValue),
-            OperatorType.GreaterThan => CompareValues(actualValue, condition.ExpectedValue, out var gtComparison) && gtComparison > 0,
-            OperatorType.LessThan => CompareValues(actualValue, condition.ExpectedValue, out var ltComparison) && ltComparison < 0,
+            OperatorType.GreaterThan =>
+                (CompareValues(actualValue, condition.ExpectedValue, out var gtComparison) && gtComparison > 0) ||
+                EvaluateDynamicComparison(actualValue, condition.ExpectedValue, ">"),
+            OperatorType.LessThan =>
+                (CompareValues(actualValue, condition.ExpectedValue, out var ltComparison) && ltComparison < 0) ||
+                EvaluateDynamicComparison(actualValue, condition.ExpectedValue, "<"),
             OperatorType.Contains => EvaluateContains(actualValue, condition.ExpectedValue),
             OperatorType.In => EvaluateIn(actualValue, condition.ExpectedValue),
             OperatorType.NotIn => !EvaluateIn(actualValue, condition.ExpectedValue),
@@ -174,7 +179,11 @@ public class ConditionEvaluator : IConditionEvaluator
             return false;
         }
 
-        return actualString.Contains(expectedValue, StringComparison.OrdinalIgnoreCase);
+        var normalizedActual = actualString.ToLowerInvariant();
+        var normalizedExpected = expectedValue.ToLowerInvariant();
+
+        var source = new[] { normalizedActual }.AsQueryable();
+        return source.Any("it.Contains(@0)", normalizedExpected);
     }
 
     private static bool EvaluateIn(object? actualValue, string expectedValues)
@@ -187,7 +196,40 @@ public class ConditionEvaluator : IConditionEvaluator
         var candidates = expectedValues
             .Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
 
+        var actualString = Convert.ToString(actualValue, CultureInfo.InvariantCulture);
+        if (string.IsNullOrWhiteSpace(actualString))
+        {
+            return false;
+        }
+
+        var normalizedCandidates = candidates
+            .Select(candidate => candidate.ToLowerInvariant())
+            .AsQueryable();
+
+        var normalizedActual = actualString.ToLowerInvariant();
+        if (normalizedCandidates.Any("it == @0", normalizedActual))
+        {
+            return true;
+        }
+
         return candidates.Any(candidate => EvaluateEquals(actualValue, candidate));
+    }
+
+    private static bool EvaluateDynamicComparison(object? actualValue, string expectedValue, string @operator)
+    {
+        if (actualValue == null)
+        {
+            return false;
+        }
+
+        var actualString = Convert.ToString(actualValue, CultureInfo.InvariantCulture);
+        if (string.IsNullOrWhiteSpace(actualString))
+        {
+            return false;
+        }
+
+        var source = new[] { new DynamicComparisonItem { Actual = actualString } }.AsQueryable();
+        return source.Any($"Actual {@operator} @0", expectedValue);
     }
 
     private static bool TryGetDecimal(object value, out decimal number)
@@ -268,5 +310,10 @@ public class ConditionEvaluator : IConditionEvaluator
 
         boolean = false;
         return false;
+    }
+
+    private sealed class DynamicComparisonItem
+    {
+        public string Actual { get; init; } = string.Empty;
     }
 }
