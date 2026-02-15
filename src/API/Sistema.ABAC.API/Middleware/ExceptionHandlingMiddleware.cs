@@ -56,6 +56,18 @@ public class ExceptionHandlingMiddleware
                 HttpStatusCode.NotFound,
                 "Recurso No Encontrado",
                 notFoundEx.Message),
+
+            BadRequestException badRequestEx => CreateProblemDetails(
+                context,
+                HttpStatusCode.BadRequest,
+                "Petición Inválida",
+                badRequestEx.Message),
+
+            UnauthorizedException unauthorizedEx => CreateProblemDetails(
+                context,
+                HttpStatusCode.Unauthorized,
+                "No Autenticado",
+                unauthorizedEx.Message),
             
             ValidationException validationEx => CreateValidationProblemDetails(
                 context,
@@ -72,6 +84,14 @@ public class ExceptionHandlingMiddleware
                 HttpStatusCode.Forbidden,
                 "Acceso Denegado",
                 forbiddenEx.Message),
+
+            InternalServerErrorException internalServerErrorEx => CreateProblemDetails(
+                context,
+                HttpStatusCode.InternalServerError,
+                "Error Interno del Servidor",
+                _environment.IsDevelopment()
+                    ? internalServerErrorEx.Message
+                    : "Ha ocurrido un error inesperado. Por favor, contacta al administrador del sistema."),
 
             // Excepciones genéricas
             ArgumentException or ArgumentNullException => CreateProblemDetails(
