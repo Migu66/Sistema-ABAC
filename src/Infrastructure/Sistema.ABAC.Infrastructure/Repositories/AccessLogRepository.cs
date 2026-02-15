@@ -105,6 +105,8 @@ public class AccessLogRepository : Repository<AccessLog>, IAccessLogRepository
         string? result = null,
         DateTime? fromDate = null,
         DateTime? toDate = null,
+        string sortBy = "CreatedAt",
+        bool sortDescending = true,
         int skip = 0,
         int take = 50,
         CancellationToken cancellationToken = default)
@@ -133,8 +135,26 @@ public class AccessLogRepository : Repository<AccessLog>, IAccessLogRepository
         if (toDate.HasValue)
             query = query.Where(al => al.CreatedAt <= toDate.Value);
 
+        query = sortBy?.ToLowerInvariant() switch
+        {
+            "result" => sortDescending
+                ? query.OrderByDescending(al => al.Result)
+                : query.OrderBy(al => al.Result),
+            "userid" => sortDescending
+                ? query.OrderByDescending(al => al.UserId)
+                : query.OrderBy(al => al.UserId),
+            "resourceid" => sortDescending
+                ? query.OrderByDescending(al => al.ResourceId)
+                : query.OrderBy(al => al.ResourceId),
+            "actionid" => sortDescending
+                ? query.OrderByDescending(al => al.ActionId)
+                : query.OrderBy(al => al.ActionId),
+            _ => sortDescending
+                ? query.OrderByDescending(al => al.CreatedAt)
+                : query.OrderBy(al => al.CreatedAt)
+        };
+
         return await query
-            .OrderByDescending(al => al.CreatedAt)
             .Skip(skip)
             .Take(take)
             .ToListAsync(cancellationToken);

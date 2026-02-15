@@ -89,6 +89,8 @@ public interface IAccessLogRepository : IRepository<AccessLog>
     /// <param name="result">Resultado de la evaluación (opcional)</param>
     /// <param name="fromDate">Fecha desde (opcional)</param>
     /// <param name="toDate">Fecha hasta (opcional)</param>
+    /// <param name="sortBy">Campo por el cual ordenar (CreatedAt, Result, UserId, ResourceId, ActionId)</param>
+    /// <param name="sortDescending">Indica si el orden es descendente</param>
     /// <param name="skip">Número de registros a omitir</param>
     /// <param name="take">Número de registros a tomar</param>
     /// <param name="cancellationToken">Token de cancelación</param>
@@ -100,6 +102,8 @@ public interface IAccessLogRepository : IRepository<AccessLog>
         string? result = null,
         DateTime? fromDate = null,
         DateTime? toDate = null,
+        string sortBy = "CreatedAt",
+        bool sortDescending = true,
         int skip = 0,
         int take = 50,
         CancellationToken cancellationToken = default);

@@ -99,6 +99,8 @@ public class AuditService : IAuditService
             result: filter.Result,
             fromDate: filter.FromDate,
             toDate: filter.ToDate,
+            sortBy: filter.SortBy,
+            sortDescending: filter.SortDescending,
             skip: skip,
             take: filter.PageSize,
             cancellationToken: cancellationToken);
