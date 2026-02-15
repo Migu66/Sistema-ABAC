@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Serilog;
@@ -210,6 +211,30 @@ try
     builder.Services.AddFluentValidationAutoValidation()
                     .AddFluentValidationClientsideAdapters();
     builder.Services.AddValidatorsFromAssemblyContaining<Sistema.ABAC.Application.DTOs.Auth.RegisterDto>();
+
+    builder.Services.Configure<ApiBehaviorOptions>(options =>
+    {
+        options.InvalidModelStateResponseFactory = context =>
+        {
+            var problemDetails = new ValidationProblemDetails(context.ModelState)
+            {
+                Type = "https://httpstatuses.com/400",
+                Title = "Error de Validación",
+                Status = StatusCodes.Status400BadRequest,
+                Detail = "Se han producido uno o más errores de validación. Revisa los detalles.",
+                Instance = context.HttpContext.Request.Path
+            };
+
+            problemDetails.Extensions["traceId"] = context.HttpContext.TraceIdentifier;
+            problemDetails.Extensions["timestamp"] = DateTime.UtcNow;
+
+            return new BadRequestObjectResult(problemDetails)
+            {
+                ContentTypes = { "application/problem+json" }
+            };
+        };
+    });
+
     Log.Information("FluentValidation configurado correctamente");
 
     // 9. Configurar AutoMapper
