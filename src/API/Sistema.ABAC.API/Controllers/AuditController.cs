@@ -55,4 +55,28 @@ public class AuditController : ControllerBase
         var result = await _auditService.GetLogsAsync(filter, cancellationToken);
         return Ok(result);
     }
+
+    /// <summary>
+    /// Obtiene estadísticas agregadas de auditoría.
+    /// </summary>
+    /// <param name="fromDate">Fecha inicial opcional para filtrar estadísticas</param>
+    /// <param name="toDate">Fecha final opcional para filtrar estadísticas</param>
+    /// <param name="cancellationToken">Token de cancelación</param>
+    /// <returns>Conteos y tasas de accesos permitidos, denegados y errores</returns>
+    [HttpGet("statistics")]
+    [ProducesResponseType(typeof(AccessLogStatisticsDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<ActionResult<AccessLogStatisticsDto>> GetStatistics(
+        [FromQuery] DateTime? fromDate = null,
+        [FromQuery] DateTime? toDate = null,
+        CancellationToken cancellationToken = default)
+    {
+        _logger.LogInformation(
+            "Consultando estadísticas de auditoría: FromDate={FromDate}, ToDate={ToDate}",
+            fromDate,
+            toDate);
+
+        var statistics = await _auditService.GetStatisticsAsync(fromDate, toDate, cancellationToken);
+        return Ok(statistics);
+    }
 }
