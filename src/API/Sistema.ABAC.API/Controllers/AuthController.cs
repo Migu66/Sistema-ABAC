@@ -1,7 +1,9 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System.IdentityModel.Tokens.Jwt;
 using Sistema.ABAC.Application.DTOs.Auth;
 using Sistema.ABAC.Application.Services;
+using Sistema.ABAC.API.Security;
 using System.Security.Claims;
 
 namespace Sistema.ABAC.API.Controllers;
@@ -14,16 +16,22 @@ namespace Sistema.ABAC.API.Controllers;
 public class AuthController : ControllerBase
 {
     private readonly IAuthService _authService;
+    private readonly ITokenBlacklistService _tokenBlacklistService;
     private readonly ILogger<AuthController> _logger;
 
     /// <summary>
     /// Constructor del controlador de autenticación.
     /// </summary>
     /// <param name="authService">Servicio de autenticación.</param>
+    /// <param name="tokenBlacklistService">Servicio de blacklist de tokens.</param>
     /// <param name="logger">Servicio de logging.</param>
-    public AuthController(IAuthService authService, ILogger<AuthController> logger)
+    public AuthController(
+        IAuthService authService,
+        ITokenBlacklistService tokenBlacklistService,
+        ILogger<AuthController> logger)
     {
         _authService = authService;
+        _tokenBlacklistService = tokenBlacklistService;
         _logger = logger;
     }
 
@@ -118,5 +126,36 @@ public class AuthController : ControllerBase
         _logger.LogInformation("Token renovado exitosamente");
 
         return Ok(result);
+    }
+
+    /// <summary>
+    /// Revoca el token actual agregándolo a la blacklist hasta su expiración.
+    /// </summary>
+    /// <param name="cancellationToken">Token de cancelación.</param>
+    /// <returns>Sin contenido.</returns>
+    /// <response code="204">Token revocado correctamente.</response>
+    /// <response code="401">Usuario no autenticado.</response>
+    [HttpPost("logout")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<IActionResult> Logout(CancellationToken cancellationToken = default)
+    {
+        var tokenId = User.FindFirstValue(JwtRegisteredClaimNames.Jti)
+            ?? User.FindFirstValue("jti");
+
+        var expClaim = User.FindFirstValue(JwtRegisteredClaimNames.Exp)
+            ?? User.FindFirstValue("exp");
+
+        if (string.IsNullOrWhiteSpace(tokenId) || !long.TryParse(expClaim, out var expUnix))
+        {
+            return Unauthorized();
+        }
+
+        var expiresAtUtc = DateTimeOffset.FromUnixTimeSeconds(expUnix).UtcDateTime;
+        await _tokenBlacklistService.BlacklistTokenAsync(tokenId, expiresAtUtc, cancellationToken);
+
+        _logger.LogInformation("Token revocado exitosamente. Jti={Jti}", tokenId);
+        return NoContent();
     }
 }

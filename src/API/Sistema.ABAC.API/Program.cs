@@ -4,17 +4,20 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using System.IdentityModel.Tokens.Jwt;
 using AspNetCoreRateLimit;
 using Serilog;
 using Serilog.Events;
 using Sistema.ABAC.API.Authorization;
 using Sistema.ABAC.API.Middleware;
 using Sistema.ABAC.API.RateLimiting;
+using Sistema.ABAC.API.Security;
 using Sistema.ABAC.Application.Mappings;
 using Sistema.ABAC.Application.Services;
 using Sistema.ABAC.Application.Services.ABAC;
 using Sistema.ABAC.Domain.Interfaces;
 using Sistema.ABAC.Infrastructure.Repositories;
+using Sistema.ABAC.Infrastructure.Services;
 using Sistema.ABAC.Domain.Entities;
 using Sistema.ABAC.Infrastructure.Persistence;
 using Sistema.ABAC.Infrastructure.Settings;
@@ -106,6 +109,8 @@ try
     builder.Services.AddScoped<IPolicyEvaluator, PolicyEvaluator>();
     builder.Services.AddScoped<IAccessControlService, AccessControlService>();
     builder.Services.AddScoped<IAuditService, AuditService>();
+    builder.Services.AddScoped<IAuthService, AuthService>();
+    builder.Services.AddScoped<IJwtService, JwtService>();
     builder.Services.AddScoped<IAuthorizationHandler, AbacAuthorizationHandler>();
 
     // 3. Configurar JWT Settings
@@ -162,6 +167,20 @@ try
             },
             OnTokenValidated = context =>
             {
+                var blacklistService = context.HttpContext.RequestServices.GetRequiredService<ITokenBlacklistService>();
+                var tokenId = context.Principal?.FindFirst(JwtRegisteredClaimNames.Jti)?.Value;
+
+                if (string.IsNullOrWhiteSpace(tokenId) && context.SecurityToken is JwtSecurityToken jwtToken)
+                {
+                    tokenId = jwtToken.Id;
+                }
+
+                if (!string.IsNullOrWhiteSpace(tokenId) && blacklistService.IsTokenBlacklisted(tokenId))
+                {
+                    context.Fail("El token ha sido revocado.");
+                    return Task.CompletedTask;
+                }
+
                 Log.Information("Token JWT validado correctamente para usuario: {User}",
                     context.Principal?.Identity?.Name ?? "Unknown");
                 return Task.CompletedTask;
@@ -221,6 +240,7 @@ try
     builder.Services.AddSingleton<IClientResolveContributor, AuthenticatedUserResolveContributor>();
 
     builder.Services.AddSingleton<IRateLimitConfiguration, RateLimitConfiguration>();
+    builder.Services.AddSingleton<ITokenBlacklistService, MemoryTokenBlacklistService>();
 
     // 8. Configurar FluentValidation
     builder.Services.AddFluentValidationAutoValidation()
