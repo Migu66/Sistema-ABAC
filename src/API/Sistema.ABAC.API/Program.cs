@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using AspNetCoreRateLimit;
 using Serilog;
 using Serilog.Events;
 using Sistema.ABAC.API.Authorization;
@@ -207,6 +208,13 @@ try
     // 7. Agregar controladores
     builder.Services.AddControllers();
 
+    // 7.1 Configurar Rate Limiting por IP
+    builder.Services.AddMemoryCache();
+    builder.Services.Configure<IpRateLimitOptions>(builder.Configuration.GetSection("IpRateLimiting"));
+    builder.Services.Configure<IpRateLimitPolicies>(builder.Configuration.GetSection("IpRateLimitPolicies"));
+    builder.Services.AddInMemoryRateLimiting();
+    builder.Services.AddSingleton<IRateLimitConfiguration, RateLimitConfiguration>();
+
     // 8. Configurar FluentValidation
     builder.Services.AddFluentValidationAutoValidation()
                     .AddFluentValidationClientsideAdapters();
@@ -313,6 +321,9 @@ try
 
     // 6. Habilitar CORS (DEBE IR ANTES de Authentication/Authorization)
     app.UseCors();
+
+    // 6.1 Habilitar Rate Limiting por IP
+    app.UseIpRateLimiting();
 
     // 7. Autenticación (DEBE IR ANTES de Authorization)
     app.UseAuthentication();
