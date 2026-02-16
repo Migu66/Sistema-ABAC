@@ -11,7 +11,9 @@ public class AssignUserAttributeDtoValidator : AbstractValidator<AssignUserAttri
 
         RuleFor(x => x.Value)
             .NotEmpty().WithMessage("El valor del atributo es requerido.")
-            .MaximumLength(500).WithMessage("El valor del atributo no puede exceder 500 caracteres.");
+            .MaximumLength(500).WithMessage("El valor del atributo no puede exceder 500 caracteres.")
+            .MustNotContainHtml()
+            .MustNotContainControlChars();
 
         RuleFor(x => x.ValidTo)
             .GreaterThanOrEqualTo(x => x.ValidFrom!.Value)

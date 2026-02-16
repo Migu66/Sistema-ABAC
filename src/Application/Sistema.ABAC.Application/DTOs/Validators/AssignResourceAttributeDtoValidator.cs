@@ -11,6 +11,8 @@ public class AssignResourceAttributeDtoValidator : AbstractValidator<AssignResou
 
         RuleFor(x => x.Value)
             .NotEmpty().WithMessage("El valor del atributo es requerido.")
-            .MaximumLength(500).WithMessage("El valor del atributo no puede exceder 500 caracteres.");
+            .MaximumLength(500).WithMessage("El valor del atributo no puede exceder 500 caracteres.")
+            .MustNotContainHtml()
+            .MustNotContainControlChars();
     }
 }

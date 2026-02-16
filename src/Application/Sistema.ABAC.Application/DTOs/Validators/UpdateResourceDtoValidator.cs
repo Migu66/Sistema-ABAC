@@ -8,14 +8,20 @@ public class UpdateResourceDtoValidator : AbstractValidator<UpdateResourceDto>
     {
         RuleFor(x => x.Name)
             .NotEmpty().WithMessage("El nombre del recurso es requerido.")
-            .MaximumLength(200).WithMessage("El nombre del recurso no puede exceder 200 caracteres.");
+            .MaximumLength(200).WithMessage("El nombre del recurso no puede exceder 200 caracteres.")
+            .MustNotContainHtml()
+            .MustNotContainControlChars();
 
         RuleFor(x => x.Type)
             .NotEmpty().WithMessage("El tipo del recurso es requerido.")
-            .MaximumLength(100).WithMessage("El tipo del recurso no puede exceder 100 caracteres.");
+            .MaximumLength(100).WithMessage("El tipo del recurso no puede exceder 100 caracteres.")
+            .MustNotContainHtml()
+            .MustNotContainControlChars();
 
         RuleFor(x => x.Description)
             .MaximumLength(500).WithMessage("La descripción no puede exceder 500 caracteres.")
+            .MustNotContainHtml()
+            .MustNotContainControlChars()
             .When(x => !string.IsNullOrWhiteSpace(x.Description));
     }
 }

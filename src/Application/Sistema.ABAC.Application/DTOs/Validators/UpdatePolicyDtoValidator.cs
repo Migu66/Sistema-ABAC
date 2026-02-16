@@ -8,10 +8,14 @@ public class UpdatePolicyDtoValidator : AbstractValidator<UpdatePolicyDto>
     {
         RuleFor(x => x.Name)
             .NotEmpty().WithMessage("El nombre de la política es requerido.")
-            .MaximumLength(200).WithMessage("El nombre de la política no puede exceder 200 caracteres.");
+            .MaximumLength(200).WithMessage("El nombre de la política no puede exceder 200 caracteres.")
+            .MustNotContainHtml()
+            .MustNotContainControlChars();
 
         RuleFor(x => x.Description)
             .MaximumLength(1000).WithMessage("La descripción no puede exceder 1000 caracteres.")
+            .MustNotContainHtml()
+            .MustNotContainControlChars()
             .When(x => !string.IsNullOrWhiteSpace(x.Description));
 
         RuleFor(x => x.Effect)
