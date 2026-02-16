@@ -9,6 +9,7 @@ using Serilog;
 using Serilog.Events;
 using Sistema.ABAC.API.Authorization;
 using Sistema.ABAC.API.Middleware;
+using Sistema.ABAC.API.RateLimiting;
 using Sistema.ABAC.Application.Mappings;
 using Sistema.ABAC.Application.Services;
 using Sistema.ABAC.Application.Services.ABAC;
@@ -213,6 +214,12 @@ try
     builder.Services.Configure<IpRateLimitOptions>(builder.Configuration.GetSection("IpRateLimiting"));
     builder.Services.Configure<IpRateLimitPolicies>(builder.Configuration.GetSection("IpRateLimitPolicies"));
     builder.Services.AddInMemoryRateLimiting();
+
+    // 7.2 Configurar Rate Limiting por usuario autenticado
+    builder.Services.Configure<ClientRateLimitOptions>(builder.Configuration.GetSection("ClientRateLimiting"));
+    builder.Services.Configure<ClientRateLimitPolicies>(builder.Configuration.GetSection("ClientRateLimitPolicies"));
+    builder.Services.AddSingleton<IClientResolveContributor, AuthenticatedUserResolveContributor>();
+
     builder.Services.AddSingleton<IRateLimitConfiguration, RateLimitConfiguration>();
 
     // 8. Configurar FluentValidation
@@ -327,6 +334,9 @@ try
 
     // 7. Autenticación (DEBE IR ANTES de Authorization)
     app.UseAuthentication();
+
+    // 7.1 Habilitar Rate Limiting por usuario autenticado
+    app.UseClientRateLimiting();
     
     // 8. Autorización
     app.UseAuthorization();
