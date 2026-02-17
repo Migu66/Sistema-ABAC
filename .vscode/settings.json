@@ -1,0 +1,8 @@
+{
+    "chat.tools.terminal.autoApprove": {
+        "/^dotnet test --configuration Release --verbosity minimal$/": {
+            "approve": true,
+            "matchCommandLine": true
+        }
+    }
+}
