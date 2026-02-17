@@ -84,7 +84,7 @@ try
         options.Password.RequireDigit = true;
         options.Password.RequireLowercase = true;
         options.Password.RequireUppercase = true;
-        options.Password.RequireNonAlphanumeric = true;
+        options.Password.RequireNonAlphanumeric = false; // La validación de caracteres especiales se maneja en el DTO con regex
         options.Password.RequiredLength = 8;
         options.Password.RequiredUniqueChars = 1;
 

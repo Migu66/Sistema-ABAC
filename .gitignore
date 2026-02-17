@@ -424,3 +424,5 @@ appsettings.*.Local.json
 
 # Pasos para crear la app
 Pasos.md
+
+POSTMAN_API_ROUTES.TXT

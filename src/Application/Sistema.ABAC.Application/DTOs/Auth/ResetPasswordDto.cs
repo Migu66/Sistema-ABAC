@@ -25,7 +25,7 @@ public class ResetPasswordDto
     /// </summary>
     [Required(ErrorMessage = "La nueva contraseña es requerida")]
     [MinLength(8, ErrorMessage = "La contraseña debe tener al menos 8 caracteres")]
-    [RegularExpression(@"^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$",
+    [RegularExpression(@"^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&_])[A-Za-z\d@$!%*?&_]{8,}$",
         ErrorMessage = "La contraseña debe contener al menos una mayúscula, una minúscula, un número y un carácter especial")]
     public string NewPassword { get; set; } = string.Empty;
 
