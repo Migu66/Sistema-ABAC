@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore.Storage;
+using Sistema.ABAC.Domain.Entities;
 using Sistema.ABAC.Domain.Interfaces;
 using Sistema.ABAC.Infrastructure.Persistence;
 
@@ -21,6 +22,10 @@ public class UnitOfWork : IUnitOfWork
     private IActionRepository? _actions;
     private IPolicyRepository? _policies;
     private IAccessLogRepository? _accessLogs;
+    private IRepository<UserAttribute>? _userAttributes;
+    private IRepository<ResourceAttribute>? _resourceAttributes;
+    private IRepository<PolicyCondition>? _policyConditions;
+    private IRepository<PolicyAction>? _policyActions;
 
     public UnitOfWork(
         AbacDbContext context,
@@ -81,6 +86,42 @@ public class UnitOfWork : IUnitOfWork
         {
             _accessLogs ??= new AccessLogRepository(_context);
             return _accessLogs;
+        }
+    }
+
+    public IRepository<UserAttribute> UserAttributes
+    {
+        get
+        {
+            _userAttributes ??= new Repository<UserAttribute>(_context);
+            return _userAttributes;
+        }
+    }
+
+    public IRepository<ResourceAttribute> ResourceAttributes
+    {
+        get
+        {
+            _resourceAttributes ??= new Repository<ResourceAttribute>(_context);
+            return _resourceAttributes;
+        }
+    }
+
+    public IRepository<PolicyCondition> PolicyConditions
+    {
+        get
+        {
+            _policyConditions ??= new Repository<PolicyCondition>(_context);
+            return _policyConditions;
+        }
+    }
+
+    public IRepository<PolicyAction> PolicyActions
+    {
+        get
+        {
+            _policyActions ??= new Repository<PolicyAction>(_context);
+            return _policyActions;
         }
     }
 

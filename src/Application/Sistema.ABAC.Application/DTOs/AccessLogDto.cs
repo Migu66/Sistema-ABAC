@@ -41,6 +41,8 @@ public class AccessLogFilterDto
 
     public int Page { get; set; } = 1;
     public int PageSize { get; set; } = 50;
+    public string SortBy { get; set; } = "CreatedAt";
+    public bool SortDescending { get; set; } = true;
 }
 
 /// <summary>

@@ -1,15 +1,31 @@
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using Microsoft.OpenApi;
+using System.IdentityModel.Tokens.Jwt;
+using AspNetCoreRateLimit;
 using Serilog;
 using Serilog.Events;
+using Sistema.ABAC.API.Authorization;
 using Sistema.ABAC.API.Middleware;
+using Sistema.ABAC.API.RateLimiting;
+using Sistema.ABAC.API.Security;
 using Sistema.ABAC.Application.Mappings;
+using Sistema.ABAC.Application.Services;
+using Sistema.ABAC.Application.Services.ABAC;
+using Sistema.ABAC.Domain.Interfaces;
+using Sistema.ABAC.Infrastructure.Repositories;
+using Sistema.ABAC.Infrastructure.Services;
 using Sistema.ABAC.Domain.Entities;
 using Sistema.ABAC.Infrastructure.Persistence;
 using Sistema.ABAC.Infrastructure.Settings;
 using System.Text;
+using FluentValidation;
+using FluentValidation.AspNetCore;
+using Swashbuckle.AspNetCore.Annotations;
 
 // Cargar variables de entorno desde archivo .env
 DotNetEnv.Env.Load();
@@ -88,6 +104,18 @@ try
     .AddEntityFrameworkStores<AbacDbContext>()
     .AddDefaultTokenProviders();
 
+    // 2.1 Registrar servicios ABAC y dependencias del handler de autorización
+    builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
+    builder.Services.AddScoped<IAttributeCollectorService, AttributeCollectorService>();
+    builder.Services.AddScoped<IConditionEvaluator, ConditionEvaluator>();
+    builder.Services.AddScoped<IPolicyEvaluator, PolicyEvaluator>();
+    builder.Services.AddScoped<IAccessControlService, AccessControlService>();
+    builder.Services.AddScoped<IAuditService, AuditService>();
+    builder.Services.AddScoped<IAuthService, AuthService>();
+    builder.Services.AddScoped<IJwtService, JwtService>();
+    builder.Services.AddScoped<IResourceService, ResourceService>();
+    builder.Services.AddScoped<IAuthorizationHandler, AbacAuthorizationHandler>();
+
     // 3. Configurar JWT Settings
     var jwtSettings = new JwtSettings();
     builder.Configuration.GetSection(JwtSettings.SectionName).Bind(jwtSettings);
@@ -142,6 +170,20 @@ try
             },
             OnTokenValidated = context =>
             {
+                var blacklistService = context.HttpContext.RequestServices.GetRequiredService<ITokenBlacklistService>();
+                var tokenId = context.Principal?.FindFirst(JwtRegisteredClaimNames.Jti)?.Value;
+
+                if (string.IsNullOrWhiteSpace(tokenId) && context.SecurityToken is JwtSecurityToken jwtToken)
+                {
+                    tokenId = jwtToken.Id;
+                }
+
+                if (!string.IsNullOrWhiteSpace(tokenId) && blacklistService.IsTokenBlacklisted(tokenId))
+                {
+                    context.Fail("El token ha sido revocado.");
+                    return Task.CompletedTask;
+                }
+
                 Log.Information("Token JWT validado correctamente para usuario: {User}",
                     context.Principal?.Identity?.Name ?? "Unknown");
                 return Task.CompletedTask;
@@ -152,8 +194,9 @@ try
     // 5. Configurar Autorización
     builder.Services.AddAuthorization(options =>
     {
-        // Políticas de autorización personalizadas se agregarán en fases posteriores
-        // options.AddPolicy("AbacPolicy", policy => policy.Requirements.Add(new AbacRequirement()));
+        options.AddPolicy(AbacAuthorizeAttribute.PolicyName,
+            policy => policy.RequireAuthenticatedUser()
+                            .AddRequirements(new AbacRequirement()));
     });
 
     // 6. Configurar CORS
@@ -188,14 +231,80 @@ try
     // 7. Agregar controladores
     builder.Services.AddControllers();
 
-    // 8. Configurar AutoMapper
+    // 7.1 Configurar Rate Limiting por IP
+    builder.Services.AddMemoryCache();
+    builder.Services.Configure<IpRateLimitOptions>(builder.Configuration.GetSection("IpRateLimiting"));
+    builder.Services.Configure<IpRateLimitPolicies>(builder.Configuration.GetSection("IpRateLimitPolicies"));
+    builder.Services.AddInMemoryRateLimiting();
+
+    // 7.2 Configurar Rate Limiting por usuario autenticado
+    builder.Services.Configure<ClientRateLimitOptions>(builder.Configuration.GetSection("ClientRateLimiting"));
+    builder.Services.Configure<ClientRateLimitPolicies>(builder.Configuration.GetSection("ClientRateLimitPolicies"));
+    builder.Services.AddSingleton<IClientResolveContributor, AuthenticatedUserResolveContributor>();
+
+    builder.Services.AddSingleton<IRateLimitConfiguration, RateLimitConfiguration>();
+    builder.Services.AddSingleton<ITokenBlacklistService, MemoryTokenBlacklistService>();
+
+    // 8. Configurar FluentValidation
+    builder.Services.AddFluentValidationAutoValidation()
+                    .AddFluentValidationClientsideAdapters();
+    builder.Services.AddValidatorsFromAssemblyContaining<Sistema.ABAC.Application.DTOs.Auth.RegisterDto>();
+
+    builder.Services.Configure<ApiBehaviorOptions>(options =>
+    {
+        options.InvalidModelStateResponseFactory = context =>
+        {
+            var problemDetails = new ValidationProblemDetails(context.ModelState)
+            {
+                Type = "https://httpstatuses.com/400",
+                Title = "Error de Validación",
+                Status = StatusCodes.Status400BadRequest,
+                Detail = "Se han producido uno o más errores de validación. Revisa los detalles.",
+                Instance = context.HttpContext.Request.Path
+            };
+
+            problemDetails.Extensions["traceId"] = context.HttpContext.TraceIdentifier;
+            problemDetails.Extensions["timestamp"] = DateTime.UtcNow;
+
+            return new BadRequestObjectResult(problemDetails)
+            {
+                ContentTypes = { "application/problem+json" }
+            };
+        };
+    });
+
+    Log.Information("FluentValidation configurado correctamente");
+
+    // 9. Configurar AutoMapper
     builder.Services.AddApplicationAutoMapper();
     Log.Information("AutoMapper configurado correctamente");
 
-    // 9. Configurar Swagger/OpenAPI con documentación XML
+    // 10. Configurar Swagger/OpenAPI con documentación XML
+    builder.Services.AddOpenApi();
     builder.Services.AddEndpointsApiExplorer();
     builder.Services.AddSwaggerGen(options =>
     {
+        options.EnableAnnotations();
+
+        // Configurar autenticación JWT en Swagger
+        options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+        {
+            Name = "Authorization",
+            Type = SecuritySchemeType.Http,
+            Scheme = "bearer",
+            BearerFormat = "JWT",
+            In = ParameterLocation.Header,
+            Description = "Introduce el token JWT en el formato: Bearer {tu_token}"
+        });
+
+        options.AddSecurityRequirement(document => new OpenApiSecurityRequirement
+        {
+            {
+                new OpenApiSecuritySchemeReference("Bearer", document, null),
+                new List<string>()
+            }
+        });
+
         // Incluir archivos XML de documentación
         var xmlFiles = new[]
         {
@@ -265,8 +374,14 @@ try
     // 6. Habilitar CORS (DEBE IR ANTES de Authentication/Authorization)
     app.UseCors();
 
+    // 6.1 Habilitar Rate Limiting por IP
+    app.UseIpRateLimiting();
+
     // 7. Autenticación (DEBE IR ANTES de Authorization)
     app.UseAuthentication();
+
+    // 7.1 Habilitar Rate Limiting por usuario autenticado
+    app.UseClientRateLimiting();
     
     // 8. Autorización
     app.UseAuthorization();
@@ -299,5 +414,9 @@ catch (Exception ex)
 finally
 {
     Log.CloseAndFlush();
+}
+
+public partial class Program
+{
 }
 
