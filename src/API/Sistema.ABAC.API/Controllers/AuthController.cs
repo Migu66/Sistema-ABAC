@@ -5,6 +5,7 @@ using Sistema.ABAC.Application.DTOs.Auth;
 using Sistema.ABAC.Application.Services;
 using Sistema.ABAC.API.Security;
 using System.Security.Claims;
+using Swashbuckle.AspNetCore.Annotations;
 
 namespace Sistema.ABAC.API.Controllers;
 
@@ -43,6 +44,9 @@ public class AuthController : ControllerBase
     /// <response code="201">Usuario registrado exitosamente.</response>
     /// <response code="400">Datos de registro inválidos o usuario ya existe.</response>
     [HttpPost("register")]
+    [SwaggerOperation(
+        Summary = "Registrar usuario",
+        Description = "Ejemplo request: {\n  \"userName\": \"jdoe\",\n  \"email\": \"jdoe@abac.com\",\n  \"password\": \"P@ssw0rd!\",\n  \"confirmPassword\": \"P@ssw0rd!\",\n  \"fullName\": \"John Doe\",\n  \"department\": \"IT\"\n}\n\nEjemplo response 201: {\n  \"accessToken\": \"eyJ...\",\n  \"tokenType\": \"Bearer\",\n  \"expiresIn\": 3600,\n  \"expiresAt\": \"2026-02-17T11:00:00Z\",\n  \"refreshToken\": \"rt_...\",\n  \"user\": { \"id\": \"00000000-0000-0000-0000-000000000000\", \"userName\": \"jdoe\", \"email\": \"jdoe@abac.com\" }\n}")]
     [ProducesResponseType(typeof(TokenDto), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<ActionResult<TokenDto>> Register([FromBody] RegisterDto registerDto)
@@ -64,6 +68,9 @@ public class AuthController : ControllerBase
     /// <response code="200">Autenticación exitosa.</response>
     /// <response code="401">Credenciales inválidas.</response>
     [HttpPost("login")]
+    [SwaggerOperation(
+        Summary = "Iniciar sesión",
+        Description = "Ejemplo request: {\n  \"userName\": \"jdoe\",\n  \"password\": \"P@ssw0rd!\",\n  \"rememberMe\": true\n}\n\nEjemplo response 200: {\n  \"accessToken\": \"eyJ...\",\n  \"tokenType\": \"Bearer\",\n  \"expiresIn\": 3600,\n  \"expiresAt\": \"2026-02-17T11:00:00Z\",\n  \"refreshToken\": \"rt_...\",\n  \"user\": { \"id\": \"00000000-0000-0000-0000-000000000000\", \"userName\": \"jdoe\", \"email\": \"jdoe@abac.com\" }\n}")]
     [ProducesResponseType(typeof(TokenDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<ActionResult<TokenDto>> Login([FromBody] LoginDto loginDto)
@@ -114,6 +121,9 @@ public class AuthController : ControllerBase
     /// <response code="400">Tokens inválidos o expirados.</response>
     /// <response code="401">Refresh token no autorizado.</response>
     [HttpPost("refresh")]
+    [SwaggerOperation(
+        Summary = "Renovar token",
+        Description = "Ejemplo request: {\n  \"accessToken\": \"eyJ...\",\n  \"refreshToken\": \"rt_...\"\n}\n\nEjemplo response 200: {\n  \"accessToken\": \"eyJ...new\",\n  \"tokenType\": \"Bearer\",\n  \"expiresIn\": 3600,\n  \"expiresAt\": \"2026-02-17T12:00:00Z\",\n  \"refreshToken\": \"rt_new...\",\n  \"user\": { \"id\": \"00000000-0000-0000-0000-000000000000\", \"userName\": \"jdoe\", \"email\": \"jdoe@abac.com\" }\n}")]
     [ProducesResponseType(typeof(TokenDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]

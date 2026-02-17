@@ -25,6 +25,7 @@ using Sistema.ABAC.Infrastructure.Settings;
 using System.Text;
 using FluentValidation;
 using FluentValidation.AspNetCore;
+using Swashbuckle.AspNetCore.Annotations;
 
 // Cargar variables de entorno desde archivo .env
 DotNetEnv.Env.Load();
@@ -283,6 +284,8 @@ try
     builder.Services.AddEndpointsApiExplorer();
     builder.Services.AddSwaggerGen(options =>
     {
+        options.EnableAnnotations();
+
         // Configurar autenticación JWT en Swagger
         options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
         {
