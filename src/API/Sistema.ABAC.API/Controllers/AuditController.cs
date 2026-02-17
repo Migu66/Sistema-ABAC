@@ -34,6 +34,8 @@ public class AuditController : ControllerBase
     /// <param name="filter">Filtros de búsqueda: userId, resourceId, actionId, result, fromDate, toDate, page y pageSize</param>
     /// <param name="cancellationToken">Token de cancelación</param>
     /// <returns>Resultado paginado de logs de auditoría</returns>
+    /// <response code="200">Logs de auditoría obtenidos exitosamente</response>
+    /// <response code="401">Usuario no autenticado</response>
     [HttpGet("logs")]
     [ProducesResponseType(typeof(PagedResultDto<AccessLogDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
@@ -63,6 +65,8 @@ public class AuditController : ControllerBase
     /// <param name="toDate">Fecha final opcional para filtrar estadísticas</param>
     /// <param name="cancellationToken">Token de cancelación</param>
     /// <returns>Conteos y tasas de accesos permitidos, denegados y errores</returns>
+    /// <response code="200">Estadísticas obtenidas exitosamente</response>
+    /// <response code="401">Usuario no autenticado</response>
     [HttpGet("statistics")]
     [ProducesResponseType(typeof(AccessLogStatisticsDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]

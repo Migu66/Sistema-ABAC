@@ -34,6 +34,9 @@ public class AccessController : ControllerBase
     /// <param name="request">Datos de evaluación: usuario, recurso, acción y contexto opcional</param>
     /// <param name="cancellationToken">Token de cancelación</param>
     /// <returns>Resultado completo de autorización ABAC</returns>
+    /// <response code="200">Evaluación de acceso realizada correctamente</response>
+    /// <response code="400">Solicitud inválida</response>
+    /// <response code="401">Usuario no autenticado</response>
     [HttpPost("evaluate")]
     [ProducesResponseType(typeof(AbacAuthorizationResult), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
