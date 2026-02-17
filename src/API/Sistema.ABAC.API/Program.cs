@@ -111,6 +111,7 @@ try
     builder.Services.AddScoped<IAuditService, AuditService>();
     builder.Services.AddScoped<IAuthService, AuthService>();
     builder.Services.AddScoped<IJwtService, JwtService>();
+    builder.Services.AddScoped<IResourceService, ResourceService>();
     builder.Services.AddScoped<IAuthorizationHandler, AbacAuthorizationHandler>();
 
     // 3. Configurar JWT Settings
