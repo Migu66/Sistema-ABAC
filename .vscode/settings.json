@@ -3,6 +3,10 @@
         "/^dotnet test --configuration Release --verbosity minimal$/": {
             "approve": true,
             "matchCommandLine": true
+        },
+        "/^cd \"c:\\\\Proyectos GitHub\\\\Sistema ABAC\"; dotnet build tests/Sistema\\.ABAC\\.Tests/Sistema\\.ABAC\\.Tests\\.csproj 2>&1$/": {
+            "approve": true,
+            "matchCommandLine": true
         }
     }
 }

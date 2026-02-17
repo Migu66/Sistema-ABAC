@@ -5,8 +5,9 @@
       <DataCollector friendlyName="XPlat code coverage">
         <Configuration>
           <Format>cobertura</Format>
-          <Exclude>[xunit.*]*,[Moq]*,[FluentAssertions*]*</Exclude>
-          <ExcludeByFile>**/Migrations/*.cs;**/*.g.cs;**/*.g.i.cs</ExcludeByFile>
+          <Exclude>[xunit.*]*,[Moq]*,[FluentAssertions*]*,[Sistema.ABAC.Infrastructure]Sistema.ABAC.Infrastructure.Persistence.Migrations.*</Exclude>
+          <ExcludeByFile>**/Migrations/**/*.cs;**/Migrations/*.cs;**/*.g.cs;**/*.g.i.cs;**/Generated/**</ExcludeByFile>
+          <ExcludeByAttribute>GeneratedCodeAttribute,CompilerGeneratedAttribute,ExcludeFromCodeCoverageAttribute</ExcludeByAttribute>
           <SkipAutoProps>true</SkipAutoProps>
           <SingleHit>false</SingleHit>
           <UseSourceLink>false</UseSourceLink>
