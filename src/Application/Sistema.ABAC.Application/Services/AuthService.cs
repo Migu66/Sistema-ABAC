@@ -143,4 +143,27 @@ public class AuthService : IAuthService
             User = userDto
         };
     }
+
+    /// <inheritdoc />
+    public async Task<TokenDto> RefreshTokenAsync(RefreshTokenDto refreshTokenDto)
+    {
+        // TODO: Implementar validación completa del refresh token
+        // Por ahora, esta es una implementación básica que deberá mejorarse
+        // En producción debería:
+        // 1. Validar el refresh token contra un almacén (base de datos/Redis)
+        // 2. Verificar que el refresh token no haya expirado
+        // 3. Verificar que el refresh token no haya sido revocado
+        // 4. Extraer el userId del token expirado de forma segura
+
+        if (string.IsNullOrEmpty(refreshTokenDto.AccessToken) || 
+            string.IsNullOrEmpty(refreshTokenDto.RefreshToken))
+        {
+            throw new ValidationException("Token", "Los tokens proporcionados no son válidos.");
+        }
+
+        // Implementación temporal: extraer userId del token sin validar (INSEGURO, solo para desarrollo)
+        // En producción se debe validar el refresh token contra la base de datos
+        throw new NotImplementedException(
+            "La funcionalidad de refresh token requiere implementación completa con almacenamiento de refresh tokens.");
+    }
 }

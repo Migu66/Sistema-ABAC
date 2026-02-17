@@ -12,4 +12,7 @@
   <Folder Name="/src/Infrastructure/">
     <Project Path="src/Infrastructure/Sistema.ABAC.Infrastructure/Sistema.ABAC.Infrastructure.csproj" />
   </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Sistema.ABAC.Tests/Sistema.ABAC.Tests.csproj" />
+  </Folder>
 </Solution>
