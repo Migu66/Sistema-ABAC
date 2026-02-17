@@ -278,6 +278,7 @@ try
     Log.Information("AutoMapper configurado correctamente");
 
     // 10. Configurar Swagger/OpenAPI con documentación XML
+    builder.Services.AddOpenApi();
     builder.Services.AddEndpointsApiExplorer();
     builder.Services.AddSwaggerGen(options =>
     {
