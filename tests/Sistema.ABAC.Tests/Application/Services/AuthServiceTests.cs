@@ -1,6 +1,9 @@
 using FluentAssertions;
 using Moq;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Http;
+using Microsoft.EntityFrameworkCore;
+using MockQueryable.Moq;
 using Sistema.ABAC.Application.Common.Exceptions;
 using Sistema.ABAC.Application.DTOs.Auth;
 using Sistema.ABAC.Application.Services;
@@ -15,6 +18,8 @@ public class AuthServiceTests
 {
     private readonly Mock<UserManager<User>> _userManagerMock;
     private readonly Mock<IJwtService> _jwtServiceMock;
+    private readonly Mock<IAbacDbContext> _dbContextMock;
+    private readonly Mock<IHttpContextAccessor> _httpContextAccessorMock;
     private readonly IMapper _mapper;
     private readonly AuthService _sut;
 
@@ -25,6 +30,20 @@ public class AuthServiceTests
             store.Object, null!, null!, null!, null!, null!, null!, null!, null!);
 
         _jwtServiceMock = new Mock<IJwtService>();
+        _dbContextMock = new Mock<IAbacDbContext>();
+        _httpContextAccessorMock = new Mock<IHttpContextAccessor>();
+
+        // Configurar DbSet mock para RefreshTokens usando MockQueryable
+        var refreshTokensData = new List<RefreshToken>();
+        var mockRefreshTokensSet = refreshTokensData.BuildMockDbSet();
+
+        _dbContextMock.Setup(db => db.RefreshTokens).Returns(mockRefreshTokensSet.Object);
+        _dbContextMock.Setup(db => db.SaveChangesAsync(It.IsAny<CancellationToken>())).ReturnsAsync(1);
+
+        // Configurar HttpContextAccessor con IP de prueba
+        var httpContext = new DefaultHttpContext();
+        httpContext.Connection.RemoteIpAddress = System.Net.IPAddress.Parse("127.0.0.1");
+        _httpContextAccessorMock.Setup(x => x.HttpContext).Returns(httpContext);
 
         var config = new MapperConfiguration(cfg => cfg.AddProfile<MappingProfile>());
         _mapper = config.CreateMapper();
@@ -32,7 +51,9 @@ public class AuthServiceTests
         _sut = new AuthService(
             _userManagerMock.Object,
             _mapper,
-            _jwtServiceMock.Object);
+            _jwtServiceMock.Object,
+            _dbContextMock.Object,
+            _httpContextAccessorMock.Object);
     }
 
     #region RegisterAsync
@@ -283,13 +304,15 @@ public class AuthServiceTests
     }
 
     [Fact]
-    public async Task RefreshTokenAsync_ValidTokens_ThrowsNotImplementedException()
+    public async Task RefreshTokenAsync_InvalidRefreshToken_ThrowsValidationException()
     {
-        var dto = new RefreshTokenDto { AccessToken = "tok", RefreshToken = "ref" };
+        var dto = new RefreshTokenDto { AccessToken = "tok", RefreshToken = "invalid_token" };
 
+        // El token no existe en la base de datos (mock retorna lista vacía)
         var act = async () => await _sut.RefreshTokenAsync(dto);
 
-        await act.Should().ThrowAsync<NotImplementedException>();
+        var exception = await act.Should().ThrowAsync<ValidationException>();
+        exception.Which.Errors.Should().ContainKey("RefreshToken");
     }
 
     #endregion
