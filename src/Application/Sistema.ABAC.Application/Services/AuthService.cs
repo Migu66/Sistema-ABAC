@@ -1,5 +1,9 @@
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
 using AutoMapper;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
 using Sistema.ABAC.Application.Common.Exceptions;
 using Sistema.ABAC.Application.DTOs.Auth;
 using Sistema.ABAC.Domain.Entities;
@@ -15,15 +19,21 @@ public class AuthService : IAuthService
     private readonly UserManager<User> _userManager;
     private readonly IMapper _mapper;
     private readonly IJwtService _jwtService;
+    private readonly IAbacDbContext _dbContext;
+    private readonly IHttpContextAccessor _httpContextAccessor;
 
     public AuthService(
         UserManager<User> userManager,
         IMapper mapper,
-        IJwtService jwtService)
+        IJwtService jwtService,
+        IAbacDbContext dbContext,
+        IHttpContextAccessor httpContextAccessor)
     {
         _userManager = userManager;
         _mapper = mapper;
         _jwtService = jwtService;
+        _dbContext = dbContext;
+        _httpContextAccessor = httpContextAccessor;
     }
 
     /// <inheritdoc />
@@ -133,6 +143,21 @@ public class AuthService : IAuthService
         // Generar token JWT usando el servicio JWT
         var token = await _jwtService.GenerateTokenAsync(user, roles, claims);
 
+        // Guardar refresh token en la base de datos
+        var refreshTokenEntity = new RefreshToken
+        {
+            Id = Guid.NewGuid(),
+            Token = token.RefreshToken!,
+            UserId = user.Id,
+            CreatedAt = DateTime.UtcNow,
+            ExpiresAt = DateTime.UtcNow.AddDays(7), // Los refresh tokens duran 7 días
+            IsRevoked = false,
+            CreatedByIp = GetClientIpAddress()
+        };
+
+        _dbContext.RefreshTokens.Add(refreshTokenEntity);
+        await _dbContext.SaveChangesAsync();
+
         return new TokenDto
         {
             AccessToken = token.AccessToken,
@@ -147,23 +172,87 @@ public class AuthService : IAuthService
     /// <inheritdoc />
     public async Task<TokenDto> RefreshTokenAsync(RefreshTokenDto refreshTokenDto)
     {
-        // TODO: Implementar validación completa del refresh token
-        // Por ahora, esta es una implementación básica que deberá mejorarse
-        // En producción debería:
-        // 1. Validar el refresh token contra un almacén (base de datos/Redis)
-        // 2. Verificar que el refresh token no haya expirado
-        // 3. Verificar que el refresh token no haya sido revocado
-        // 4. Extraer el userId del token expirado de forma segura
-
+        // Validar que los tokens no estén vacíos
         if (string.IsNullOrEmpty(refreshTokenDto.AccessToken) || 
             string.IsNullOrEmpty(refreshTokenDto.RefreshToken))
         {
             throw new ValidationException("Token", "Los tokens proporcionados no son válidos.");
         }
 
-        // Implementación temporal: extraer userId del token sin validar (INSEGURO, solo para desarrollo)
-        // En producción se debe validar el refresh token contra la base de datos
-        throw new NotImplementedException(
-            "La funcionalidad de refresh token requiere implementación completa con almacenamiento de refresh tokens.");
+        // Buscar el refresh token en la base de datos
+        var storedToken = await _dbContext.RefreshTokens
+            .Include(rt => rt.User)
+            .FirstOrDefaultAsync(rt => rt.Token == refreshTokenDto.RefreshToken);
+
+        if (storedToken == null)
+        {
+            throw new ValidationException("RefreshToken", "El token de actualización no es válido.");
+        }
+
+        // Verificar que el token esté activo (no revocado y no expirado)
+        if (!storedToken.IsActive)
+        {
+            throw new ValidationException("RefreshToken", 
+                storedToken.IsRevoked 
+                    ? "El token de actualización ha sido revocado." 
+                    : "El token de actualización ha expirado.");
+        }
+
+        // Verificar que el usuario existe y está activo
+        if (storedToken.User.IsDeleted)
+        {
+            throw new ValidationException("User", "La cuenta de usuario ha sido desactivada.");
+        }
+
+        // Validar que el token JWT corresponde al usuario del refresh token
+        var tokenHandler = new JwtSecurityTokenHandler();
+        JwtSecurityToken? jwtToken = null;
+        
+        try
+        {
+            jwtToken = tokenHandler.ReadJwtToken(refreshTokenDto.AccessToken);
+        }
+        catch
+        {
+            throw new ValidationException("AccessToken", "El token de acceso no es válido.");
+        }
+
+        var userIdClaim = jwtToken.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier)?.Value;
+        
+        if (string.IsNullOrEmpty(userIdClaim) || 
+            !Guid.TryParse(userIdClaim, out var userId) || 
+            userId != storedToken.UserId)
+        {
+            throw new ValidationException("Token", "Los tokens no corresponden al mismo usuario.");
+        }
+
+        // Revocar el token anterior
+        storedToken.IsRevoked = true;
+        storedToken.RevokedAt = DateTime.UtcNow;
+
+        // Generar nuevos tokens
+        var newTokenDto = await GenerateTokenAsync(storedToken.UserId);
+
+        // Guardar el token antiguo revocado con referencia al nuevo
+        var newRefreshToken = await _dbContext.RefreshTokens
+            .FirstOrDefaultAsync(rt => rt.Token == newTokenDto.RefreshToken);
+        
+        if (newRefreshToken != null)
+        {
+            storedToken.ReplacedByTokenId = newRefreshToken.Id;
+        }
+
+        await _dbContext.SaveChangesAsync();
+
+        return newTokenDto;
+    }
+
+    /// <summary>
+    /// Obtiene la dirección IP del cliente desde el contexto HTTP.
+    /// </summary>
+    /// <returns>Dirección IP del cliente o null si no está disponible.</returns>
+    private string? GetClientIpAddress()
+    {
+        return _httpContextAccessor.HttpContext?.Connection.RemoteIpAddress?.ToString();
     }
 }

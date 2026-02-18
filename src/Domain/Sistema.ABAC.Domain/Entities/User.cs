@@ -58,4 +58,9 @@ public class User : IdentityUser<Guid>
     /// Colección de registros de auditoría de acceso realizados por este usuario.
     /// </summary>
     public virtual ICollection<AccessLog> AccessLogs { get; set; } = new List<AccessLog>();
+
+    /// <summary>
+    /// Colección de tokens de actualización (refresh tokens) asociados a este usuario.
+    /// </summary>
+    public virtual ICollection<RefreshToken> RefreshTokens { get; set; } = new List<RefreshToken>();
 }

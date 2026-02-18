@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
+using Sistema.ABAC.Application.Services;
 using Sistema.ABAC.Domain.Entities;
 using Sistema.ABAC.Infrastructure.Persistence.Interceptors;
 
@@ -18,7 +19,7 @@ namespace Sistema.ABAC.Infrastructure.Persistence;
 /// - Guid: El tipo de dato para las claves primarias de las tablas de Identity
 /// </para>
 /// </remarks>
-public class AbacDbContext : IdentityDbContext<User, IdentityRole<Guid>, Guid>
+public class AbacDbContext : IdentityDbContext<User, IdentityRole<Guid>, Guid>, IAbacDbContext
 {
     public AbacDbContext(DbContextOptions<AbacDbContext> options) : base(options)
     {
@@ -95,6 +96,12 @@ public class AbacDbContext : IdentityDbContext<User, IdentityRole<Guid>, Guid>
     /// Ejemplo: "Usuario Juan intentó leer Archivo X - Resultado: Permitido".
     /// </summary>
     public DbSet<AccessLog> AccessLogs { get; set; }
+
+    /// <summary>
+    /// Tabla de tokens de actualización (refresh tokens) para renovación de tokens JWT.
+    /// Almacena los refresh tokens activos de cada usuario para validación y revocación.
+    /// </summary>
+    public DbSet<RefreshToken> RefreshTokens { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

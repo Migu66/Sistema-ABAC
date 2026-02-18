@@ -1,5 +1,6 @@
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
+using System.Security.Cryptography;
 using System.Text;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
@@ -73,6 +74,9 @@ public class JwtService : IJwtService
         var tokenHandler = new JwtSecurityTokenHandler();
         var accessToken = tokenHandler.WriteToken(token);
 
+        // Generar refresh token seguro
+        var refreshToken = GenerateRefreshToken();
+
         // Crear el DTO de respuesta
         var tokenDto = new TokenDto
         {
@@ -80,10 +84,27 @@ public class JwtService : IJwtService
             TokenType = "Bearer",
             ExpiresIn = _jwtSettings.ExpirationInMinutes * 60, // Convertir a segundos
             ExpiresAt = expiresAt,
-            RefreshToken = null, // Por ahora no implementamos refresh tokens
+            RefreshToken = refreshToken,
             User = null! // Se asignará en AuthService
         };
 
         return Task.FromResult(tokenDto);
+    }
+
+    /// <summary>
+    /// Genera un refresh token aleatorio y seguro.
+    /// </summary>
+    /// <returns>Token de actualización de 64 caracteres en base64url.</returns>
+    private static string GenerateRefreshToken()
+    {
+        var randomBytes = new byte[64];
+        using var rng = RandomNumberGenerator.Create();
+        rng.GetBytes(randomBytes);
+        
+        // Convertir a base64url (seguro para URLs)
+        return Convert.ToBase64String(randomBytes)
+            .TrimEnd('=')
+            .Replace('+', '-')
+            .Replace('/', '_');
     }
 }
