@@ -118,6 +118,9 @@ try
     builder.Services.AddScoped<IJwtService, JwtService>();
     builder.Services.AddScoped<IResourceService, ResourceService>();
     builder.Services.AddScoped<IUserService, UserService>();
+    builder.Services.AddScoped<IAttributeService, AttributeService>();
+    builder.Services.AddScoped<IActionService, ActionService>();
+    builder.Services.AddScoped<IPolicyService, PolicyService>();
     builder.Services.AddScoped<IAuthorizationHandler, AbacAuthorizationHandler>();
 
     // 3. Configurar JWT Settings
