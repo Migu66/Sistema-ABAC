@@ -236,7 +236,12 @@ try
     });
 
     // 7. Agregar controladores
-    builder.Services.AddControllers();
+    builder.Services.AddControllers()
+        .AddJsonOptions(options =>
+        {
+            options.JsonSerializerOptions.PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase;
+            options.JsonSerializerOptions.Converters.Add(new System.Text.Json.Serialization.JsonStringEnumConverter());
+        });
 
     // 7.1 Configurar Rate Limiting por IP
     builder.Services.AddMemoryCache();
