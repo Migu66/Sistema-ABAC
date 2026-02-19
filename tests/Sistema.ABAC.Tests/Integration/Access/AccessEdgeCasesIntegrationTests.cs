@@ -18,6 +18,10 @@ public class AccessEdgeCasesIntegrationTests : IClassFixture<CustomWebApplicatio
 {
     private readonly CustomWebApplicationFactory _factory;
     private readonly HttpClient _client;
+    private static readonly System.Text.Json.JsonSerializerOptions _jsonOptions = new(System.Text.Json.JsonSerializerDefaults.Web)
+    {
+        Converters = { new System.Text.Json.Serialization.JsonStringEnumConverter() }
+    };
 
     public AccessEdgeCasesIntegrationTests(CustomWebApplicationFactory factory)
     {
@@ -45,7 +49,7 @@ public class AccessEdgeCasesIntegrationTests : IClassFixture<CustomWebApplicatio
         var response = await _client.PostAsJsonAsync("/api/access/evaluate", request);
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
-        var result = await response.Content.ReadFromJsonAsync<AuthorizationResult>();
+        var result = await response.Content.ReadFromJsonAsync<AuthorizationResult>(_jsonOptions);
         result.Should().NotBeNull();
         result!.Decision.Should().Be(AuthorizationDecision.Deny);
     }
@@ -66,7 +70,7 @@ public class AccessEdgeCasesIntegrationTests : IClassFixture<CustomWebApplicatio
         var response = await _client.PostAsJsonAsync("/api/access/evaluate", request);
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
-        var result = await response.Content.ReadFromJsonAsync<AuthorizationResult>();
+        var result = await response.Content.ReadFromJsonAsync<AuthorizationResult>(_jsonOptions);
         result.Should().NotBeNull();
         result!.Decision.Should().Be(AuthorizationDecision.Deny);
     }

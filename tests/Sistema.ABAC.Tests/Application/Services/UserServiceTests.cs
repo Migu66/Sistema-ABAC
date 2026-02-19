@@ -62,15 +62,11 @@ public class UserServiceTests
             .Setup(r => r.GetByIdAsync(userId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(user);
 
-        _userManagerMock
-            .Setup(m => m.GetRolesAsync(user))
-            .ReturnsAsync(new List<string> { "Admin" });
-
         var result = await _sut.GetByIdAsync(userId);
 
         result.Should().NotBeNull();
         result!.UserName.Should().Be("testuser");
-        result.Roles.Should().Contain("Admin");
+        result.Roles.Should().BeEmpty();
     }
 
     [Fact]

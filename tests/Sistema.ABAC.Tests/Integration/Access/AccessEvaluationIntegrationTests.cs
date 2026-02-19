@@ -19,6 +19,10 @@ public class AccessEvaluationIntegrationTests : IClassFixture<CustomWebApplicati
 {
     private readonly CustomWebApplicationFactory _factory;
     private readonly HttpClient _client;
+    private static readonly System.Text.Json.JsonSerializerOptions _jsonOptions = new(System.Text.Json.JsonSerializerDefaults.Web)
+    {
+        Converters = { new System.Text.Json.Serialization.JsonStringEnumConverter() }
+    };
 
     public AccessEvaluationIntegrationTests(CustomWebApplicationFactory factory)
     {
@@ -66,7 +70,7 @@ public class AccessEvaluationIntegrationTests : IClassFixture<CustomWebApplicati
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
 
-        var result = await response.Content.ReadFromJsonAsync<AuthorizationResult>();
+        var result = await response.Content.ReadFromJsonAsync<AuthorizationResult>(_jsonOptions);
         result.Should().NotBeNull();
         result!.Decision.Should().Be(AuthorizationDecision.Permit);
         result.Reason.Should().NotBeNullOrWhiteSpace();
@@ -89,7 +93,7 @@ public class AccessEvaluationIntegrationTests : IClassFixture<CustomWebApplicati
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
 
-        var result = await response.Content.ReadFromJsonAsync<AuthorizationResult>();
+        var result = await response.Content.ReadFromJsonAsync<AuthorizationResult>(_jsonOptions);
         result.Should().NotBeNull();
         result!.Decision.Should().Be(AuthorizationDecision.Deny);
         result.Reason.Should().NotBeNullOrWhiteSpace();
