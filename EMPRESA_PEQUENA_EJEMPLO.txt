@@ -1,0 +1,351 @@
+===============================================
+SISTEMA ABAC - CASO DE USO PEQUEÑO
+EMPRESA: "TechStart MX S.A."
+(Software house con 80 empleados)
+===============================================
+
+CONTEXTO:
+---------
+TechStart MX tiene 3 departamentos: DESARROLLO, VENTAS y RRHH.
+Solo necesita controlar quién puede ver documentos de nómina y
+quién puede acceder al código fuente en producción.
+
+BASE URL: http://localhost:5000/api
+
+===============================================
+PASO 1: REGISTRO DEL ADMIN
+===============================================
+
+POST /api/Auth/register
+{
+  "userName": "admin",
+  "email": "admin@techstart.mx",
+  "password": "Admin!2026",
+  "confirmPassword": "Admin!2026",
+  "fullName": "Administrador TechStart",
+  "department": "IT"
+}
+-- Copiar accessToken → usar como Bearer en todos los demás --
+
+===============================================
+PASO 2: CREAR ATRIBUTOS (3 en total)
+===============================================
+
+POST /api/Attributes
+{
+  "name": "Departamento",
+  "key": "department",
+  "type": "String",
+  "description": "DESARROLLO, VENTAS o RRHH"
+}
+-- Guardar ID como {{attr_dept}} --
+
+---
+
+POST /api/Attributes
+{
+  "name": "Es Senior",
+  "key": "is_senior",
+  "type": "Boolean",
+  "description": "true si el empleado tiene más de 2 años en la empresa"
+}
+-- Guardar ID como {{attr_senior}} --
+
+---
+
+POST /api/Attributes
+{
+  "name": "Clasificación Recurso",
+  "key": "classification",
+  "type": "String",
+  "description": "PUBLICO, INTERNO o CONFIDENCIAL"
+}
+-- Guardar ID como {{attr_classification}} --
+
+===============================================
+PASO 3: CREAR ACCIONES (2 en total)
+===============================================
+
+POST /api/Actions
+{
+  "name": "Ver",
+  "code": "view",
+  "description": "Solo lectura"
+}
+-- Guardar ID como {{action_view}} --
+
+---
+
+POST /api/Actions
+{
+  "name": "Editar",
+  "code": "edit",
+  "description": "Lectura y escritura"
+}
+-- Guardar ID como {{action_edit}} --
+
+===============================================
+PASO 4: CREAR RECURSOS (2 en total)
+===============================================
+
+POST /api/Resources
+{
+  "name": "Nóminas y Salarios",
+  "type": "documento",
+  "description": "Archivo con salarios de todos los empleados"
+}
+-- Guardar ID como {{resource_nomina}} --
+
+POST /api/Resources/{{resource_nomina}}/attributes
+{
+  "attributeId": "{{attr_classification}}",
+  "value": "CONFIDENCIAL"
+}
+
+---
+
+POST /api/Resources
+{
+  "name": "Repositorio Producción",
+  "type": "repositorio",
+  "description": "Código fuente del sistema en producción"
+}
+-- Guardar ID como {{resource_repo_prod}} --
+
+POST /api/Resources/{{resource_repo_prod}}/attributes
+{
+  "attributeId": "{{attr_classification}}",
+  "value": "INTERNO"
+}
+
+===============================================
+PASO 5: CREAR POLÍTICAS (3 en total)
+===============================================
+
+-- POLÍTICA 1: RRHH puede ver nóminas --
+POST /api/Policies
+{
+  "name": "RRHH ve Nóminas",
+  "description": "Solo RRHH puede consultar el archivo de salarios",
+  "effect": 0,
+  "priority": 100,
+  "isActive": false
+}
+-- Guardar ID como {{pol_rrhh_nomina}} --
+
+POST /api/Policies/{{pol_rrhh_nomina}}/conditions
+{
+  "attributeType": "Subject",
+  "attributeKey": "department",
+  "operator": "Equals",
+  "expectedValue": "RRHH"
+}
+
+POST /api/Policies/{{pol_rrhh_nomina}}/actions
+[ "{{action_view}}" ]
+
+PATCH /api/Policies/{{pol_rrhh_nomina}}/activate
+
+---
+
+-- POLÍTICA 2: Solo Seniors de DESARROLLO editan el repo --
+POST /api/Policies
+{
+  "name": "Seniors DESARROLLO editan Repo Producción",
+  "description": "Solo devs con más de 2 años pueden tocar producción",
+  "effect": 0,
+  "priority": 200,
+  "isActive": false
+}
+-- Guardar ID como {{pol_dev_senior_repo}} --
+
+POST /api/Policies/{{pol_dev_senior_repo}}/conditions
+{
+  "attributeType": "Subject",
+  "attributeKey": "department",
+  "operator": "Equals",
+  "expectedValue": "DESARROLLO"
+}
+
+POST /api/Policies/{{pol_dev_senior_repo}}/conditions
+{
+  "attributeType": "Subject",
+  "attributeKey": "is_senior",
+  "operator": "Equals",
+  "expectedValue": "true"
+}
+
+POST /api/Policies/{{pol_dev_senior_repo}}/actions
+[ "{{action_view}}", "{{action_edit}}" ]
+
+PATCH /api/Policies/{{pol_dev_senior_repo}}/activate
+
+---
+
+-- POLÍTICA 3 (DENY): VENTAS jamás accede a CONFIDENCIAL --
+POST /api/Policies
+{
+  "name": "DENY: Ventas no ve Confidencial",
+  "description": "Bloqueo explícito para el equipo de ventas",
+  "effect": 1,
+  "priority": 9999,
+  "isActive": false
+}
+-- Guardar ID como {{pol_deny_ventas}} --
+
+POST /api/Policies/{{pol_deny_ventas}}/conditions
+{
+  "attributeType": "Subject",
+  "attributeKey": "department",
+  "operator": "Equals",
+  "expectedValue": "VENTAS"
+}
+
+POST /api/Policies/{{pol_deny_ventas}}/conditions
+{
+  "attributeType": "Resource",
+  "attributeKey": "classification",
+  "operator": "Equals",
+  "expectedValue": "CONFIDENCIAL"
+}
+
+POST /api/Policies/{{pol_deny_ventas}}/actions
+[ "{{action_view}}", "{{action_edit}}" ]
+
+PATCH /api/Policies/{{pol_deny_ventas}}/activate
+
+===============================================
+PASO 6: CREAR USUARIOS (3 en total)
+===============================================
+
+-- Usuario 1: María de RRHH --
+POST /api/Auth/register
+{
+  "userName": "maria.rrhh",
+  "email": "maria@techstart.mx",
+  "password": "M@ria2026",
+  "confirmPassword": "M@ria2026",
+  "fullName": "María Pérez",
+  "department": "RRHH"
+}
+-- Guardar ID como {{user_maria}} --
+
+POST /api/Users/{{user_maria}}/attributes
+{ "attributeId": "{{attr_dept}}", "value": "RRHH" }
+
+POST /api/Users/{{user_maria}}/attributes
+{ "attributeId": "{{attr_senior}}", "value": "true" }
+
+---
+
+-- Usuario 2: Luis, developer senior --
+POST /api/Auth/register
+{
+  "userName": "luis.dev",
+  "email": "luis@techstart.mx",
+  "password": "Lu!s2026",
+  "confirmPassword": "Lu!s2026",
+  "fullName": "Luis Hernández",
+  "department": "DESARROLLO"
+}
+-- Guardar ID como {{user_luis}} --
+
+POST /api/Users/{{user_luis}}/attributes
+{ "attributeId": "{{attr_dept}}", "value": "DESARROLLO" }
+
+POST /api/Users/{{user_luis}}/attributes
+{ "attributeId": "{{attr_senior}}", "value": "true" }
+
+---
+
+-- Usuario 3: Sofía de VENTAS --
+POST /api/Auth/register
+{
+  "userName": "sofia.ventas",
+  "email": "sofia@techstart.mx",
+  "password": "S0f!a2026",
+  "confirmPassword": "S0f!a2026",
+  "fullName": "Sofía Ramírez",
+  "department": "VENTAS"
+}
+-- Guardar ID como {{user_sofia}} --
+
+POST /api/Users/{{user_sofia}}/attributes
+{ "attributeId": "{{attr_dept}}", "value": "VENTAS" }
+
+POST /api/Users/{{user_sofia}}/attributes
+{ "attributeId": "{{attr_senior}}", "value": "false" }
+
+===============================================
+PASO 7: EVALUACIONES DE ACCESO
+===============================================
+
+-- ✅ PERMIT: María puede ver nóminas --
+POST /api/Access/evaluate
+{
+  "userId": "{{user_maria}}",
+  "resourceId": "{{resource_nomina}}",
+  "actionId": "{{action_view}}",
+  "context": { "ipAddress": "192.168.1.10" }
+}
+ESPERADO: decision 0 (PERMIT) — Es RRHH, cumple POL-001
+
+---
+
+-- ✅ PERMIT: Luis puede editar el repo --
+POST /api/Access/evaluate
+{
+  "userId": "{{user_luis}}",
+  "resourceId": "{{resource_repo_prod}}",
+  "actionId": "{{action_edit}}",
+  "context": { "ipAddress": "192.168.1.20" }
+}
+ESPERADO: decision 0 (PERMIT) — DESARROLLO + is_senior=true, cumple POL-002
+
+---
+
+-- ❌ DENY: Sofía no puede ver nóminas --
+POST /api/Access/evaluate
+{
+  "userId": "{{user_sofia}}",
+  "resourceId": "{{resource_nomina}}",
+  "actionId": "{{action_view}}",
+  "context": { "ipAddress": "192.168.1.30" }
+}
+ESPERADO: decision 1 (DENY) — POL-DENY bloquea VENTAS + CONFIDENCIAL
+
+---
+
+-- ❌ NOT APPLICABLE: María intenta editar el repo --
+POST /api/Access/evaluate
+{
+  "userId": "{{user_maria}}",
+  "resourceId": "{{resource_repo_prod}}",
+  "actionId": "{{action_edit}}",
+  "context": { "ipAddress": "192.168.1.10" }
+}
+ESPERADO: decision 2 (NotApplicable) — No existe política para RRHH en repos
+
+===============================================
+PASO 8: VER AUDITORÍA
+===============================================
+
+GET /api/Audit/logs?page=1&pageSize=20
+GET /api/Audit/statistics
+
+===============================================
+RESUMEN
+===============================================
+
+  3 atributos  →  department, is_senior, classification
+  2 acciones   →  view, edit
+  2 recursos   →  Nóminas (CONFIDENCIAL), Repo Producción (INTERNO)
+  3 políticas  →  2 PERMIT + 1 DENY
+  3 usuarios   →  María (RRHH), Luis (DEV senior), Sofía (VENTAS)
+
+  Reglas del negocio modeladas:
+  • Solo RRHH lee nóminas
+  • Solo devs con experiencia editan producción
+  • Ventas nunca toca datos confidenciales
+
+===============================================
