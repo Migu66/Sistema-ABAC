@@ -1,4 +1,3 @@
-using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using Sistema.ABAC.Application.Services;
@@ -9,17 +8,11 @@ namespace Sistema.ABAC.Infrastructure.Persistence;
 
 /// <summary>
 /// DbContext principal del sistema ABAC.
-/// Hereda de IdentityDbContext para integrar ASP.NET Core Identity con la entidad User personalizada.
+/// Hereda de IdentityUserContext para que AddEntityFrameworkStores registre UserOnlyStore.
+/// No se llama a base.OnModelCreating() para evitar crear las tablas de Identity no usadas
+/// (AspNetUserClaims, AspNetUserLogins, AspNetUserTokens). La tabla AspNetUsers se configura manualmente.
 /// </summary>
-/// <remarks>
-/// <para>
-/// Se utiliza IdentityDbContext&lt;User, IdentityRole&lt;Guid&gt;, Guid&gt; para:
-/// - User: La entidad personalizada de usuario del dominio que hereda de IdentityUser&lt;Guid&gt;
-/// - IdentityRole&lt;Guid&gt;: Los roles de Identity usando Guid como clave
-/// - Guid: El tipo de dato para las claves primarias de las tablas de Identity
-/// </para>
-/// </remarks>
-public class AbacDbContext : IdentityDbContext<User, IdentityRole<Guid>, Guid>, IAbacDbContext
+public class AbacDbContext : IdentityUserContext<User, Guid>, IAbacDbContext
 {
     public AbacDbContext(DbContextOptions<AbacDbContext> options) : base(options)
     {
@@ -42,7 +35,9 @@ public class AbacDbContext : IdentityDbContext<User, IdentityRole<Guid>, Guid>, 
     // ============================================================
     // DbSets - Representan las tablas en la base de datos
     // ============================================================
-    
+
+    // DbSet<User> Users heredado de IdentityUserContext<User, Guid>
+
     /// <summary>
     /// Tabla de atributos del sistema (características que se pueden asignar a usuarios o recursos).
     /// Ejemplo: "Departamento", "Nivel de Seguridad", "Ubicación".
@@ -105,11 +100,43 @@ public class AbacDbContext : IdentityDbContext<User, IdentityRole<Guid>, Guid>, 
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
-        base.OnModelCreating(modelBuilder);
+        // NO llamamos base.OnModelCreating() intencionalmente:
+        // IdentityUserContext.OnModelCreating configura AspNetUserClaims, AspNetUserLogins,
+        // AspNetUserTokens y AspNetUserPasskeys — tablas que este sistema no usa y queremos eliminar.
+        // En su lugar, configuramos la entidad User manualmente e ignoramos las demás de Identity.
 
-        // Aplicar todas las configuraciones de entidades del ensamblado actual
-        // Esto busca automáticamente todas las clases que implementan IEntityTypeConfiguration<T>
-        // y aplica sus configuraciones (AttributeConfiguration, PolicyConfiguration, etc.)
+        // Ignorar todas las entidades de Identity que no se usan
+        modelBuilder.Ignore<Microsoft.AspNetCore.Identity.IdentityUserClaim<Guid>>();
+        modelBuilder.Ignore<Microsoft.AspNetCore.Identity.IdentityUserLogin<Guid>>();
+        modelBuilder.Ignore<Microsoft.AspNetCore.Identity.IdentityUserToken<Guid>>();
+        modelBuilder.Ignore<Microsoft.AspNetCore.Identity.IdentityUserPasskey<Guid>>();
+
+        // Ignorar IdentityPasskeyData si existe como entidad dependiente
+        var passkeyDataType = System.Type.GetType("Microsoft.AspNetCore.Identity.IdentityPasskeyData, Microsoft.AspNetCore.Identity.EntityFrameworkCore");
+        if (passkeyDataType != null)
+        {
+            modelBuilder.Ignore(passkeyDataType);
+        }
+
+        // Configuración mínima de Identity para la tabla AspNetUsers
+        modelBuilder.Entity<User>(b =>
+        {
+            b.HasKey(u => u.Id);
+            b.ToTable("AspNetUsers");
+            b.Property(u => u.ConcurrencyStamp).IsConcurrencyToken();
+            b.Property(u => u.UserName).HasMaxLength(256);
+            b.Property(u => u.NormalizedUserName).HasMaxLength(256);
+            b.Property(u => u.Email).HasMaxLength(256);
+            b.Property(u => u.NormalizedEmail).HasMaxLength(256);
+            b.HasIndex(u => u.NormalizedUserName)
+                .HasDatabaseName("UserNameIndex")
+                .IsUnique()
+                .HasFilter("[NormalizedUserName] IS NOT NULL");
+            b.HasIndex(u => u.NormalizedEmail)
+                .HasDatabaseName("EmailIndex");
+        });
+
+        // Aplicar configuraciones ABAC del ensamblado (UserConfiguration, PolicyConfiguration, etc.)
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(AbacDbContext).Assembly);
 
         // ============================================================

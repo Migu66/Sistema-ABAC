@@ -80,8 +80,8 @@ try
     // Registrar la interfaz IAbacDbContext para poder inyectarla en servicios de Application
     builder.Services.AddScoped<IAbacDbContext>(provider => provider.GetRequiredService<AbacDbContext>());
 
-    // 2. Configurar ASP.NET Core Identity con la entidad User personalizada
-    builder.Services.AddIdentity<User, IdentityRole<Guid>>(options =>
+    // 2. Configurar ASP.NET Core Identity (solo UserManager, sin roles ni claims en BD)
+    builder.Services.AddIdentityCore<User>(options =>
     {
         // Configuración de contraseñas
         options.Password.RequireDigit = true;

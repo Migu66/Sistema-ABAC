@@ -54,8 +54,7 @@ public class UserService : IUserService
         var userDto = _mapper.Map<UserDto>(user);
 
         // Cargar roles del usuario
-        var roles = await _userManager.GetRolesAsync(user);
-        userDto.Roles = roles.ToList();
+        userDto.Roles = new List<string>();
 
         return userDto;
     }
@@ -134,8 +133,7 @@ public class UserService : IUserService
         foreach (var user in users)
         {
             var userDto = _mapper.Map<UserDto>(user);
-            var roles = await _userManager.GetRolesAsync(user);
-            userDto.Roles = roles.ToList();
+            userDto.Roles = new List<string>();
             userDtos.Add(userDto);
         }
 
@@ -200,8 +198,7 @@ public class UserService : IUserService
         _logger.LogInformation("Usuario {UserId} actualizado correctamente", userId);
 
         var userDto = _mapper.Map<UserDto>(user);
-        var roles = await _userManager.GetRolesAsync(user);
-        userDto.Roles = roles.ToList();
+        userDto.Roles = new List<string>();
 
         return userDto;
     }
@@ -399,8 +396,7 @@ public class UserService : IUserService
         foreach (var user in users)
         {
             var userDto = _mapper.Map<UserDto>(user);
-            var roles = await _userManager.GetRolesAsync(user);
-            userDto.Roles = roles.ToList();
+            userDto.Roles = new List<string>();
             userDtos.Add(userDto);
         }
 

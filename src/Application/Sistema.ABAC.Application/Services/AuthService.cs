@@ -73,9 +73,6 @@ public class AuthService : IAuthService
             throw new ValidationException(errors);
         }
 
-        // Asignar rol por defecto (si existe configuración de roles)
-        // await _userManager.AddToRoleAsync(user, "User");
-
         // Generar y devolver token
         return await GenerateTokenAsync(user.Id);
     }
@@ -130,11 +127,9 @@ public class AuthService : IAuthService
             throw new NotFoundException("User", userId);
         }
 
-        // Obtener roles del usuario
-        var roles = await _userManager.GetRolesAsync(user);
-
-        // Obtener claims del usuario (atributos adicionales)
-        var claims = await _userManager.GetClaimsAsync(user);
+        // Roles y claims no se gestionan vía Identity (no hay tablas de roles/claims)
+        var roles = new List<string>();
+        var claims = new List<System.Security.Claims.Claim>();
 
         // Mapear usuario a UserDto
         var userDto = _mapper.Map<UserDto>(user);

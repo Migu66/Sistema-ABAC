@@ -1,4 +1,3 @@
-using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Sistema.ABAC.Domain.Entities;
 using Sistema.ABAC.Domain.Enums;
@@ -14,17 +13,14 @@ namespace Sistema.ABAC.Infrastructure.Persistence;
 /// Inserta datos que son fundamentales para el funcionamiento del sistema:
 /// - Acciones básicas (CRUD y operaciones comunes)
 /// - Atributos predefinidos (características que se usarán frecuentemente)
-/// - Roles básicos del sistema
 /// </remarks>
 public class DbInitializer
 {
     private readonly AbacDbContext _context;
-    private readonly RoleManager<IdentityRole<Guid>> _roleManager;
 
-    public DbInitializer(AbacDbContext context, RoleManager<IdentityRole<Guid>> roleManager)
+    public DbInitializer(AbacDbContext context)
     {
         _context = context;
-        _roleManager = roleManager;
     }
 
     /// <summary>
@@ -41,15 +37,13 @@ public class DbInitializer
 
             // Verificar si ya hay datos iniciales
             if (await _context.Actions.AnyAsync() || 
-                await _context.Attributes.AnyAsync() || 
-                await _roleManager.Roles.AnyAsync())
+                await _context.Attributes.AnyAsync())
             {
                 // Los datos ya existen, no hacer nada
                 return false;
             }
 
             // Insertar datos en orden lógico
-            await SeedRolesAsync();
             await SeedActionsAsync();
             await SeedAttributesAsync();
 
@@ -60,33 +54,6 @@ public class DbInitializer
         {
             // En producción, aquí se debería usar un logger
             throw new Exception("Error al inicializar la base de datos con datos semilla", ex);
-        }
-    }
-
-    /// <summary>
-    /// Crea los roles básicos del sistema.
-    /// </summary>
-    private async Task SeedRolesAsync()
-    {
-        var roles = new[]
-        {
-            "Administrador",
-            "Usuario",
-            "Auditor",
-            "Supervisor"
-        };
-
-        foreach (var roleName in roles)
-        {
-            if (!await _roleManager.RoleExistsAsync(roleName))
-            {
-                await _roleManager.CreateAsync(new IdentityRole<Guid>
-                {
-                    Id = Guid.NewGuid(),
-                    Name = roleName,
-                    NormalizedName = roleName.ToUpperInvariant()
-                });
-            }
         }
     }
 

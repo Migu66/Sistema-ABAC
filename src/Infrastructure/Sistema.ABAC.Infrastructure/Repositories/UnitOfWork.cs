@@ -1,4 +1,3 @@
-using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore.Storage;
 using Sistema.ABAC.Domain.Entities;
 using Sistema.ABAC.Domain.Interfaces;
@@ -13,7 +12,6 @@ namespace Sistema.ABAC.Infrastructure.Repositories;
 public class UnitOfWork : IUnitOfWork
 {
     private readonly AbacDbContext _context;
-    private readonly RoleManager<IdentityRole<Guid>> _roleManager;
 
     // Repositorios lazy-initialized
     private IUserRepository? _users;
@@ -27,12 +25,9 @@ public class UnitOfWork : IUnitOfWork
     private IRepository<PolicyCondition>? _policyConditions;
     private IRepository<PolicyAction>? _policyActions;
 
-    public UnitOfWork(
-        AbacDbContext context,
-        RoleManager<IdentityRole<Guid>> roleManager)
+    public UnitOfWork(AbacDbContext context)
     {
         _context = context;
-        _roleManager = roleManager;
     }
 
     public IUserRepository Users

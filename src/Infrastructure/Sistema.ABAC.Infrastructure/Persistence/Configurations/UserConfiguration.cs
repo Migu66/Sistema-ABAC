@@ -6,16 +6,15 @@ namespace Sistema.ABAC.Infrastructure.Persistence.Configurations;
 
 /// <summary>
 /// Configuración de Entity Framework para la entidad User.
-/// Define el esquema adicional para la tabla de usuarios (AspNetUsers de Identity).
+/// Define las propiedades y relaciones ABAC adicionales sobre la tabla AspNetUsers.
+/// La configuración base de Identity (ToTable, índices de Identity, MaxLength de campos Identity)
+/// se aplica en AbacDbContext.OnModelCreating para mantener separadas las responsabilidades.
 /// </summary>
 public class UserConfiguration : IEntityTypeConfiguration<User>
 {
     public void Configure(EntityTypeBuilder<User> builder)
     {
-        // Nota: La tabla base "AspNetUsers" ya está configurada por IdentityDbContext
-        // Aquí solo extendemos la configuración para las propiedades adicionales
-
-        // Configuración de propiedades adicionales de User
+        // Propiedades adicionales ABAC
         builder.Property(u => u.FirstName)
             .IsRequired()
             .HasMaxLength(100)
@@ -41,7 +40,7 @@ public class UserConfiguration : IEntityTypeConfiguration<User>
 
         // Índices adicionales
         builder.HasIndex(u => u.Email)
-            .HasDatabaseName("IX_Users_Email"); // Identity ya crea uno, pero lo nombramos explícitamente
+            .HasDatabaseName("IX_Users_Email");
 
         builder.HasIndex(u => u.IsDeleted)
             .HasDatabaseName("IX_Users_IsDeleted");
