@@ -212,25 +212,20 @@ try
     {
         options.AddDefaultPolicy(policy =>
         {
-            if (builder.Environment.IsDevelopment())
+            if (allowedOrigins.Length > 0)
             {
-                // En desarrollo, permitir cualquier origen
-                policy.AllowAnyOrigin()
-                      .AllowAnyMethod()
-                      .AllowAnyHeader();
-            }
-            else
-            {
-                // En producción, restringir a orígenes específicos
-                if (allowedOrigins.Length == 0)
-                {
-                    throw new InvalidOperationException("No se han configurado orígenes CORS permitidos para producción.");
-                }
-
+                // Si se configuran orígenes específicos, restringir a ellos
                 policy.WithOrigins(allowedOrigins)
                       .AllowAnyMethod()
                       .AllowAnyHeader()
                       .AllowCredentials();
+            }
+            else
+            {
+                // API pura sin frontend: permitir cualquier origen (seguridad gestionada por JWT)
+                policy.AllowAnyOrigin()
+                      .AllowAnyMethod()
+                      .AllowAnyHeader();
             }
         });
     });
