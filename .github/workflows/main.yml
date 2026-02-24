@@ -15,7 +15,10 @@ jobs:
   build-and-test:
     name: Build y Test
     runs-on: ubuntu-latest
-    
+    permissions:
+      id-token: write
+      contents: read
+
     steps:
     - name: Checkout
       uses: actions/checkout@v4
@@ -59,10 +62,17 @@ jobs:
       if: github.event_name == 'push' && github.ref == 'refs/heads/main'
       run: dotnet publish src/API/Sistema.ABAC.API/Sistema.ABAC.API.csproj -c Release -o ${{ env.AZURE_WEBAPP_PACKAGE_PATH }} --nologo
 
+    - name: Login en Azure (OIDC)
+      if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+      uses: azure/login@v2
+      with:
+        client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_31F1430FC51A4F6C8B6353D5764D7F22 }}
+        tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_583AC21267444020932CC15477684D7F }}
+        subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_674CA3B58D0449F69BA9CF0702F198E8 }}
+
     - name: Deploy to Azure Web App
       if: github.event_name == 'push' && github.ref == 'refs/heads/main'
       uses: azure/webapps-deploy@v3
       with:
         app-name: ${{ env.AZURE_WEBAPP_NAME }}
-        publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
         package: ${{ env.AZURE_WEBAPP_PACKAGE_PATH }}
