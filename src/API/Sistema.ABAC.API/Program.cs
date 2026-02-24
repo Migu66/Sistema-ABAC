@@ -367,18 +367,15 @@ try
         };
     });
 
-    // 4. Habilitar Swagger en desarrollo
-    if (app.Environment.IsDevelopment())
+    // 4. Habilitar Swagger (siempre visible)
+    app.UseSwagger();
+    app.UseSwaggerUI(options =>
     {
-        app.UseSwagger();
-        app.UseSwaggerUI(options =>
-        {
-            options.SwaggerEndpoint("/swagger/v1/swagger.json", "Sistema ABAC API v1");
-            options.RoutePrefix = "swagger";
-            options.DocumentTitle = "Sistema ABAC API - Documentación";
-            options.DisplayRequestDuration();
-        });
-    }
+        options.SwaggerEndpoint("/swagger/v1/swagger.json", "Sistema ABAC API v1");
+        options.RoutePrefix = "swagger";
+        options.DocumentTitle = "Sistema ABAC API - Documentación";
+        options.DisplayRequestDuration();
+    });
 
     // 5. Redirección HTTPS
     app.UseHttpsRedirection();

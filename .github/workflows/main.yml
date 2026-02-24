@@ -7,7 +7,9 @@ on:
     branches: [main]
 
 env:
-  DOTNET_VERSION: '9.0.x'
+  DOTNET_VERSION: '10.0.x'
+  AZURE_WEBAPP_NAME: apiABAC
+  AZURE_WEBAPP_PACKAGE_PATH: ./publish
 
 jobs:
   build-and-test:
@@ -52,3 +54,15 @@ jobs:
         git push origin main
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Publish
+      if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+      run: dotnet publish src/API/Sistema.ABAC.API/Sistema.ABAC.API.csproj -c Release -o ${{ env.AZURE_WEBAPP_PACKAGE_PATH }} --nologo
+
+    - name: Deploy to Azure Web App
+      if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+      uses: azure/webapps-deploy@v3
+      with:
+        app-name: ${{ env.AZURE_WEBAPP_NAME }}
+        publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
+        package: ${{ env.AZURE_WEBAPP_PACKAGE_PATH }}
